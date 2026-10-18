@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CryptoQuest · Asymmetric Cryptography Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- Tokens: lab-notebook paper (light) / blueprint (dark) ---------- */
+:root{
+  --bg:#f6f7fb; --grid:#e3e7f2; --surface:#ffffff; --surface2:#eef1f8; --text:#1b2250; --muted:#5a6390; --border:#d6dbec;
+  --accent:#3047d9; --accent2:#0f9d8c; --good:#178a4c; --bad:#cf2f45; --gold:#c98a00;
+  --alice:#c2347a; --bob:#2c6be0; --eve:#b8640b; --on-accent:#ffffff;
+  --shadow:0 1px 0 rgba(27,34,80,.06), 0 8px 24px rgba(27,34,80,.08);
+  --grad:linear-gradient(120deg,var(--accent),var(--accent2));
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0d1838; --grid:#18295a; --surface:#13224b; --surface2:#1a2c5c; --text:#eaf0ff; --muted:#a3b0d9; --border:#2a3f7a;
+  --accent:#93a5ff; --accent2:#45dcc6; --good:#4fdc8f; --bad:#ff6b7c; --gold:#ffcd57;
+  --alice:#ff7ab8; --bob:#6eaaff; --eve:#ffb257; --on-accent:#0d1838;
+  --shadow:0 1px 0 rgba(0,0,0,.2), 0 10px 30px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--text)}
+body{
+  font-family:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:1.02rem;line-height:1.55;min-height:100vh;overflow-x:hidden;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;background-attachment:fixed;
+}
+code,.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace}
+code{color:var(--accent);font-size:.95em}
+h1,h2,h3,h4,h5,h6{font-weight:700;letter-spacing:-.015em;color:var(--text)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button{cursor:pointer}
+.muted{color:var(--muted)}
+.hl{color:var(--accent);font-weight:800}
+.c-alice{color:var(--alice)}.c-bob{color:var(--bob)}.c-eve{color:var(--eve)}
+
+/* ---------- Top bar ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding-top:.55rem}
+.brand{font-weight:800;font-size:1.3rem;letter-spacing:-.03em;white-space:nowrap}
+.brand em{font-style:normal;color:var(--accent)}
+.team-pill{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:.2rem .8rem;font-weight:700;font-size:.9rem;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.xp-wrap{min-width:170px}
+.xp-label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.xp-label b{color:var(--text)}
+#badgeRow span{margin-left:.15rem}
+.xp-bar{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden;border:1px solid var(--border)}
+#xpFill{height:100%;width:0;background:var(--grad);border-radius:999px;transition:width .9s cubic-bezier(.2,.9,.3,1.15);position:relative;overflow:hidden}
+#xpFill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:shine 2.4s linear infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.icon-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);width:38px;height:38px;border-radius:11px;display:grid;place-items:center;transition:transform .15s,border-color .15s;flex:0 0 auto}
+.icon-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+.stepper{display:flex;gap:.4rem;overflow-x:auto;padding:.55rem .75rem .65rem;scrollbar-width:none}
+.stepper::-webkit-scrollbar{display:none}
+.step{flex:0 0 auto;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:.28rem .85rem;font-size:.86rem;font-weight:700;display:flex;align-items:center;gap:.35rem;transition:background .2s,color .2s}
+.step.unlocked{color:var(--text)}
+.step.active{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.step.complete .chk{color:var(--good)}
+.step.active .chk{color:var(--on-accent)}
+.step.locked{opacity:.5;cursor:not-allowed}
+
+/* ---------- Layout ---------- */
+.screen{display:none}
+.screen.active{display:block;animation:screenIn .45s ease both}
+@keyframes screenIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.card-x{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:1.3rem}
+.btn-q{border:0;background:var(--accent);color:var(--on-accent);font-weight:700;padding:.62rem 1.15rem;border-radius:12px;box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,#000);transition:transform .1s,box-shadow .1s,opacity .2s;display:inline-flex;align-items:center;gap:.45rem}
+.btn-q:hover{transform:translateY(-1px)}
+.btn-q:active{transform:translateY(4px);box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 55%,#000)}
+.btn-q:disabled{opacity:.45;transform:none;cursor:not-allowed}
+.btn-q.lg{font-size:1.12rem;padding:.85rem 1.6rem}
+.btn-g{border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;padding:.55rem 1rem;border-radius:12px;transition:border-color .15s,transform .1s;display:inline-flex;align-items:center;gap:.4rem}
+.btn-g:hover:not(:disabled){border-color:var(--accent)}
+.btn-g:disabled{opacity:.6;cursor:default}
+.inp{width:100%;background:var(--surface2);border:2px solid var(--border);color:var(--text);border-radius:11px;padding:.5rem .8rem;font-size:1rem;transition:border-color .2s,background .2s;outline:none}
+.inp:focus{border-color:var(--accent)}
+.inp.mono{font-family:'IBM Plex Mono',monospace}
+.inp.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--surface2))}
+.inp.bad{border-color:var(--bad)}
+.inp.sm{width:130px}
+.inp:disabled{opacity:.8}
+label.lbl{font-weight:700;font-size:.9rem;margin:.65rem 0 .25rem;display:block}
+.tag{display:inline-block;font-size:.74rem;font-weight:800;padding:.1rem .5rem;border-radius:99px;color:var(--on-accent);vertical-align:middle}
+.tag.alice{background:var(--alice)}.tag.bob{background:var(--bob)}.tag.eve{background:var(--eve)}
+
+/* ---------- Hero ---------- */
+.hero{padding:2.2rem 0 1rem}
+.hero-title{font-size:clamp(2.4rem,6.5vw,4.6rem);font-weight:800;letter-spacing:-.045em;line-height:.98;max-width:12ch}
+.hero .lead{max-width:56ch;color:var(--muted);font-size:1.12rem;margin:1.1rem 0 1.6rem}
+.mixer{position:relative;width:min(340px,80vw);aspect-ratio:1;margin:0 auto}
+.mixer .dot{position:absolute;width:44%;aspect-ratio:1;border-radius:50%;mix-blend-mode:multiply;opacity:.9}
+@media (prefers-color-scheme:dark){.mixer .dot{mix-blend-mode:screen;opacity:.75}}
+.mixer .d1{background:var(--alice);left:4%;top:8%;animation:m1 7s ease-in-out infinite}
+.mixer .d2{background:var(--bob);right:4%;top:8%;animation:m2 7s ease-in-out infinite}
+.mixer .d3{background:#f2c94c;left:28%;bottom:4%;animation:m3 7s ease-in-out infinite}
+.mixer .lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0);font-size:3.4rem;animation:lk 7s ease-in-out infinite}
+@keyframes m1{0%,15%,100%{transform:none}45%,70%{transform:translate(32%,22%)}}
+@keyframes m2{0%,15%,100%{transform:none}45%,70%{transform:translate(-32%,22%)}}
+@keyframes m3{0%,15%,100%{transform:none}45%,70%{transform:translate(0,-32%)}}
+@keyframes lk{0%,40%,80%,100%{transform:translate(-50%,-50%) scale(0)}52%,68%{transform:translate(-50%,-50%) scale(1)}}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem 1.1rem;height:100%;border-left:5px solid var(--accent)}
+.mcard .ic{font-size:1.8rem;line-height:1}
+.mcard h5{margin:.4rem 0 .25rem;font-size:1.05rem}
+.mcard p{margin:0;color:var(--muted);font-size:.93rem}
+.timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.5rem}
+.tl{background:var(--surface2);border-radius:12px;padding:.6rem .8rem}
+.tl b{display:block;font-family:'IBM Plex Mono',monospace;color:var(--accent)}
+
+/* ---------- Team ---------- */
+.emblems{display:flex;gap:.45rem;flex-wrap:wrap}
+.emb{font-size:1.6rem;width:52px;height:52px;border-radius:14px;border:2px solid var(--border);background:var(--surface2);transition:transform .15s}
+.emb.sel{border-color:var(--accent);transform:scale(1.1);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+
+/* ---------- Mission frame ---------- */
+.m-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.6rem 0 1rem}
+.m-num{width:62px;height:62px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:1.9rem;font-weight:800;flex:0 0 auto}
+.m-head h2{margin:0;font-size:clamp(1.4rem,3.2vw,2rem)}
+.m-sub{color:var(--muted);font-weight:600}
+.m-prog{margin-left:auto}
+.m-prog .bar{width:170px;height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;border:1px solid var(--border);margin-top:.25rem}
+.m-prog .bar div{height:100%;background:var(--good);width:0;transition:width .6s}
+details.brief{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);margin-bottom:1rem}
+details.brief summary{list-style:none;cursor:pointer;padding:1rem 1.25rem;font-weight:800;display:flex;align-items:center;gap:.5rem;font-size:1.05rem}
+details.brief summary::-webkit-details-marker{display:none}
+details.brief summary .chev{margin-left:auto;transition:transform .3s}
+details.brief[open] summary .chev{transform:rotate(180deg)}
+.brief-body{padding:0 1.25rem 1.25rem}
+.fact{background:var(--surface2);border-radius:14px;padding:.9rem 1rem;height:100%}
+.fact h5{font-size:1rem;margin-bottom:.35rem}
+.fact p{margin:0;font-size:.94rem;color:var(--muted)}
+.fact p b{color:var(--text)}
+.formula{font-family:'IBM Plex Mono',monospace;border:2px dashed var(--accent);border-radius:14px;padding:.8rem 1rem;text-align:center;margin-top:1rem;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.4rem}
+.role{display:flex;align-items:center;gap:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.55rem .8rem;border-left:5px solid}
+.role span{font-size:1.6rem}
+.role small{display:block;color:var(--muted);font-size:.78rem}
+.role.alice{border-left-color:var(--alice)}.role.bob{border-left-color:var(--bob)}.role.eve{border-left-color:var(--eve)}
+.roles-note{font-size:.85rem;color:var(--muted);margin-bottom:1rem}
+@media(max-width:640px){.roles{grid-template-columns:1fr}}
+
+.task{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:1.25rem;margin-bottom:1.2rem;transition:border-color .4s}
+.task-head{display:flex;align-items:center;gap:.7rem;margin-bottom:.4rem;flex-wrap:wrap}
+.task-num{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.1rem .5rem;font-weight:600;font-family:'IBM Plex Mono',monospace;font-size:.85rem}
+.task-head h3{font-size:1.25rem;margin:0}
+.pts{margin-left:auto;font-size:.82rem;font-weight:800;color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent);padding:.18rem .65rem;border-radius:99px}
+.task.done{border:2px solid var(--good)}
+.task.done .pts{color:var(--on-accent);background:var(--good)}
+.task.done .pts::before{content:"✓ "}
+.lock-note{display:none;background:var(--surface2);border-radius:12px;padding:.7rem 1rem;font-weight:700;margin:.6rem 0}
+.task.lockedt .lock-note{display:block}
+.task.lockedt .task-body{opacity:.35;pointer-events:none;filter:grayscale(.7)}
+.step-box{background:var(--surface2);border-radius:14px;padding:.9rem 1rem;margin-top:.8rem;animation:screenIn .4s ease both}
+.step-box h6{margin-bottom:.45rem}
+
+/* ---------- Hints & outcomes ---------- */
+details.hint{margin-top:.8rem;border:1px dashed var(--gold);border-radius:14px;background:color-mix(in srgb,var(--gold) 7%,transparent)}
+details.hint>summary{list-style:none;cursor:pointer;padding:.6rem .9rem;font-weight:700;display:flex;align-items:center;gap:.4rem}
+details.hint>summary::-webkit-details-marker{display:none}
+details.hint>summary .chev{margin-left:auto;transition:transform .3s}
+details.hint[open]>summary .chev{transform:rotate(180deg)}
+details.hint[open]>summary{border-bottom:1px dashed var(--gold)}
+.hint-body{padding:.75rem .9rem}
+.hint-step{margin-bottom:.65rem;animation:screenIn .35s ease both}
+.hint-step .hn{display:inline-block;background:var(--gold);color:#1d1400;border-radius:99px;padding:0 .55rem;font-size:.75rem;font-weight:800;margin-right:.35rem}
+.worked{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;font-family:'IBM Plex Mono',monospace;font-size:.88rem;margin-top:.35rem;line-height:1.7}
+.qhint{background:none;border:0;color:var(--gold);font-weight:700;padding:0;margin-top:.5rem;font-size:.92rem}
+.qhint-t{margin-top:.35rem;font-size:.93rem;padding:.5rem .75rem;border-left:3px solid var(--gold);background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:0 10px 10px 0}
+.lo-box{background:color-mix(in srgb,var(--accent2) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent2) 35%,transparent);border-radius:14px;padding:.8rem 1rem;margin-bottom:1rem}
+.lo-box h6{margin-bottom:.35rem}
+.lo{display:flex;gap:.6rem;align-items:flex-start;padding:.22rem 0;text-align:left}
+.lo .tick{flex:0 0 22px;height:22px;border-radius:50%;border:2px solid var(--border);display:grid;place-items:center;font-size:.72rem;font-weight:800;color:transparent;transition:background .3s,border-color .3s;margin-top:.12rem}
+.lo.ok .tick{background:var(--good);border-color:var(--good);color:var(--on-accent)}
+.lo-anim .lo{animation:popIn .45s both}
+.lo-col{background:var(--surface2);border-radius:14px;padding:.9rem 1rem;height:100%}
+
+/* ---------- Quiz ---------- */
+.qz{margin-top:.9rem}
+.qz-q{font-weight:700;margin-bottom:.5rem}
+.qz-opts{display:grid;gap:.5rem}
+.opt{text-align:left;border:2px solid var(--border);background:var(--surface2);color:var(--text);border-radius:12px;padding:.6rem .85rem;transition:border-color .15s,transform .15s;font-weight:500}
+.opt:hover:not(:disabled){border-color:var(--accent);transform:translateX(4px)}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 16%,var(--surface2));animation:pop .4s;opacity:1}
+.opt.wrong{border-color:var(--bad);opacity:.55;text-decoration:line-through}
+.opt:disabled{cursor:default}
+.qz-why{margin-top:.6rem;padding:.75rem .95rem;border-radius:12px;background:color-mix(in srgb,var(--good) 9%,transparent);border:1px solid color-mix(in srgb,var(--good) 40%,transparent);font-size:.95rem}
+.shake{animation:shake .45s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes popIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+
+/* ---------- Paint lab ---------- */
+.paint-stage{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:1rem;margin-top:.9rem}
+.party{background:var(--surface2);border-radius:16px;padding:1rem;text-align:center;border-top:5px solid var(--border)}
+.party.alice{border-top-color:var(--alice)}.party.bob{border-top-color:var(--bob)}
+.party.text-start{text-align:left}
+.avatar{font-size:2.1rem;line-height:1.1}
+.palette{display:flex;gap:.45rem;justify-content:center;margin:.5rem 0}
+.swatch{width:38px;height:38px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--border);transition:transform .15s}
+.swatch:hover{transform:scale(1.1)}
+.swatch.sel{box-shadow:0 0 0 3px var(--text);transform:scale(1.15)}
+.slots{display:flex;justify-content:center;gap:.9rem;margin-top:.6rem}
+.slot{display:flex;flex-direction:column;align-items:center;gap:.2rem;font-size:.75rem;color:var(--muted)}
+.blob{width:46px;height:46px;border-radius:50%;background:var(--surface);border:2px dashed var(--border);transition:background .5s}
+.blob.filled{border:2px solid rgba(255,255,255,.5);animation:pop .5s}
+.blob.big{width:74px;height:74px}
+.blob.reveal{animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 11px color-mix(in srgb,var(--gold) 30%,transparent)}}
+.channel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;text-align:center}
+.wire{width:100%;height:6px;border-radius:9px;background:repeating-linear-gradient(90deg,var(--accent2) 0 12px,transparent 12px 22px);background-size:22px 6px;animation:flow 1s linear infinite}
+@keyframes flow{to{background-position:22px 0}}
+.eve-box{border:2px dashed var(--eve);border-radius:14px;padding:.6rem;width:100%;min-height:86px}
+.eve-box .lbl-e{font-weight:800;color:var(--eve);font-size:.88rem}
+.eve-items{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.35rem}
+.mini{width:28px;height:28px;border-radius:50%;animation:popIn .4s both}
+.fly{position:fixed;left:0;top:0;z-index:900;pointer-events:none;border-radius:50%;width:46px;height:46px;display:grid;place-items:center;font-weight:700;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:.85rem;box-shadow:0 8px 20px rgba(0,0,0,.28)}
+.fly.token{width:auto;height:auto;border-radius:10px;padding:.3rem .65rem;white-space:nowrap}
+@media(max-width:768px){.paint-stage{grid-template-columns:1fr}}
+
+/* ---------- Tiles, chips ---------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:.45rem}
+.tile{perspective:600px;height:64px;border:0;background:none;padding:0}
+.tile-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.tile.flipped .tile-in{transform:rotateY(180deg)}
+.tile-f,.tile-b{position:absolute;inset:0;border-radius:12px;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;font-family:'IBM Plex Mono',monospace;font-weight:600;border:1px solid var(--border)}
+.tile-f{background:var(--surface2);color:var(--text)}
+.tile-b{background:var(--surface);color:var(--text);transform:rotateY(180deg);font-size:.78rem;line-height:1.25;text-align:center}
+.tile.hit .tile-b{background:var(--gold);color:#1d1400;animation:glow 1.2s infinite}
+.ptiles{display:flex;gap:.45rem;flex-wrap:wrap}
+.ptile{width:60px;height:60px;border-radius:14px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1.1rem;transition:transform .15s,border-color .15s}
+.ptile:hover:not(:disabled){transform:translateY(-3px);border-color:var(--accent)}
+.ptile.sel{background:var(--accent);color:var(--on-accent);border-color:transparent;transform:scale(1.08)}
+.ptile.nope{border-color:var(--bad);color:var(--bad);text-decoration:line-through;opacity:.7}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap}
+.chip{border:2px solid var(--border);background:var(--surface);color:var(--text);border-radius:99px;padding:.35rem .95rem;font-family:'IBM Plex Mono',monospace;font-weight:600;transition:transform .15s,border-color .15s}
+.chip:hover:not(:disabled){border-color:var(--accent)}
+.chip.sel{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.chip.nope{border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.hashrow{display:flex;flex-wrap:wrap;gap:.25rem;margin:.45rem 0}
+.ch{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.15rem .4rem;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.2;animation:popIn .3s both}
+.ch small{display:block;font-size:.68rem;color:var(--muted)}
+.ktable{width:100%;font-size:.86rem;border-collapse:collapse}
+.ktable td,.ktable th{padding:.3rem .55rem;border-bottom:1px solid var(--border)}
+.ktable tr.hit td{background:color-mix(in srgb,var(--good) 18%,transparent);font-weight:700}
+
+/* ---------- Keys, envelopes, seals ---------- */
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media(max-width:640px){.keys{grid-template-columns:1fr}}
+.keycard{border-radius:18px;padding:1.1rem 1.2rem;color:#fff;position:relative;overflow:hidden;animation:dealIn .7s cubic-bezier(.2,.9,.3,1.3) both}
+.keycard.pub{background:linear-gradient(135deg,#2346c8,#0b8f9c)}
+.keycard.priv{background:linear-gradient(135deg,#a3205f,#5b2bb5);animation-delay:.2s}
+.keycard .big{font-size:2.2rem}
+.keycard code{color:#fff;font-size:1.15rem}
+.keycard small{opacity:.9}
+.keycard::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.3) 50%,transparent 70%);transform:translateX(-100%);animation:sheen 3.5s 1s infinite}
+@keyframes sheen{to{transform:translateX(100%)}}
+@keyframes dealIn{from{opacity:0;transform:translateY(30px) rotate(-6deg) scale(.8)}to{opacity:1;transform:none}}
+.burst{font-size:3.4rem;display:inline-block;animation:spinIn .9s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes spinIn{from{transform:rotate(-540deg) scale(0)}to{transform:none}}
+.scale-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.scale-grid>div{background:var(--surface);border-radius:12px;padding:.7rem;text-align:center}
+.scale-grid small{display:block;color:var(--muted);font-size:.78rem}
+.scale-grid b{font-size:1.2rem}
+@media(max-width:640px){.scale-grid{grid-template-columns:1fr}}
+.doc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 7.2rem 1rem 1rem;position:relative;min-height:110px;font-family:'IBM Plex Mono',monospace;font-size:.92rem}
+.seal{position:absolute;right:14px;top:50%;width:86px;height:86px;margin-top:-43px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.7rem;line-height:1.15;text-align:center;border:4px double;animation:stamp .5s cubic-bezier(.2,.9,.3,1.4) both;font-family:'Bricolage Grotesque',sans-serif}
+.seal.ok{color:var(--good);border-color:var(--good)}
+.seal.bad{color:var(--bad);border-color:var(--bad)}
+@keyframes stamp{from{transform:rotate(-14deg) scale(2.6);opacity:0}to{transform:rotate(-14deg) scale(1);opacity:1}}
+
+/* ---------- MITM ---------- */
+.mitm{display:flex;align-items:center;gap:.5rem;margin-top:.9rem}
+.node{display:flex;flex-direction:column;align-items:center;font-size:2.1rem;background:var(--surface2);border-radius:16px;padding:.55rem .9rem;border:2px solid var(--border);line-height:1.1}
+.node small{font-size:.76rem;font-weight:800;margin-top:.2rem}
+.node.evil{border-color:var(--bad);animation:pulseBad 1.1s infinite}
+@keyframes pulseBad{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--bad) 25%,transparent)}}
+.mm-line{flex:1;height:4px;background:repeating-linear-gradient(90deg,var(--muted) 0 8px,transparent 8px 14px);opacity:.5}
+
+/* ---------- Pitfalls & court ---------- */
+.pit-card{background:var(--surface2);border:2px solid var(--border);border-radius:18px;padding:1.2rem;animation:cardIn .45s cubic-bezier(.2,.9,.3,1.2) both}
+.pit-card.outL{animation:outL .42s forwards}.pit-card.outR{animation:outR .42s forwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.95)}}
+@keyframes outL{to{opacity:0;transform:translateX(-120%) rotate(-12deg)}}
+@keyframes outR{to{opacity:0;transform:translateX(120%) rotate(12deg)}}
+.pit-btns{display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+.btn-safe,.btn-broken{border:2px solid;border-radius:12px;padding:.6rem 1.3rem;font-weight:800;background:var(--surface);transition:background .15s,color .15s}
+.btn-safe{border-color:var(--good);color:var(--good)}.btn-broken{border-color:var(--bad);color:var(--bad)}
+.btn-safe:hover:not(:disabled){background:var(--good);color:var(--on-accent)}
+.btn-broken:hover:not(:disabled){background:var(--bad);color:var(--on-accent)}
+.chosen-ok{box-shadow:0 0 0 3px var(--good)!important}
+.chosen-bad{box-shadow:0 0 0 3px var(--bad)!important;opacity:.75}
+.pit-why{margin-top:.9rem;padding:.85rem;border-radius:12px;background:var(--surface)}
+.court-row{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface2);border-radius:14px;padding:.75rem .9rem;margin-bottom:.55rem;border:2px solid transparent;transition:border-color .3s}
+.court-row.solved{border-color:var(--good)}
+.court-row .why{flex-basis:100%;font-size:.9rem;color:var(--muted)}
+
+/* ---------- Curve ---------- */
+.cv-wrap{background:var(--surface2);border-radius:16px;padding:.6rem;margin-top:.8rem}
+#curve{width:100%;display:block;border-radius:12px;background:var(--surface)}
+.cv-ctrl{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.8rem}
+@media(max-width:640px){.cv-ctrl{grid-template-columns:1fr}}
+.range{width:100%;accent-color:var(--accent)}
+.cv-info{font-family:'IBM Plex Mono',monospace;font-size:.88rem;background:var(--surface2);border-radius:12px;padding:.65rem .85rem;margin-top:.7rem;min-height:2.6rem}
+.sz{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:.5rem;margin:.45rem 0;font-weight:700}
+.bar-k{height:28px;border-radius:8px;width:0;min-width:0;transition:width 1.4s cubic-bezier(.2,.9,.3,1);display:flex;align-items:center;padding-left:.6rem;color:#fff;font-weight:700;font-size:.82rem;white-space:nowrap;overflow:visible}
+
+/* ---------- Boss ---------- */
+.arena{display:flex;align-items:center;justify-content:space-around;gap:1rem}
+.fighter{text-align:center;width:40%}
+.hp{height:14px;border-radius:99px;background:var(--surface2);overflow:hidden;border:1px solid var(--border);margin-top:.4rem}
+.hp div{height:100%;transition:width .5s}
+.vs{font-weight:800;font-size:1.6rem;color:var(--accent)}
+.enemy{font-size:4rem;display:inline-block;animation:hover 2.4s ease-in-out infinite;line-height:1.1}
+@keyframes hover{50%{transform:translateY(-8px)}}
+.enemy.hit{animation:hit .45s}
+@keyframes hit{25%{transform:translateX(-10px) rotate(-10deg);filter:brightness(1.8)}75%{transform:translateX(10px) rotate(10deg)}}
+.boom{animation:boom 1s ease-out both}
+@keyframes boom{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.4)}100%{transform:scale(1)}}
+.timer{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;margin-top:.4rem}
+#tmr{height:100%;background:var(--grad);width:100%}
+
+/* ---------- Overlay, toasts, toolbox ---------- */
+.overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,12,32,.6);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:1rem}
+.overlay.show{display:flex}
+.overlay-card{max-height:92vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:2rem;max-width:520px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4);animation:zoomIn .5s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes zoomIn{from{opacity:0;transform:scale(.7)}}
+.ov-badge{font-size:5rem;display:inline-block;animation:spinIn 1s cubic-bezier(.2,.9,.3,1.3);line-height:1.1}
+.ov-kicker{color:var(--accent);font-weight:800}
+.toasts{position:fixed;top:118px;right:16px;z-index:1100;display:flex;flex-direction:column;gap:.5rem;max-width:min(360px,90vw)}
+.toastx{background:var(--surface);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--good);border-radius:14px;padding:.7rem 1rem;box-shadow:var(--shadow);animation:tIn .4s cubic-bezier(.2,.9,.3,1.3)}
+.toastx.bad{border-left-color:var(--bad)}.toastx.gold{border-left-color:var(--gold)}
+.toastx.out{animation:tOut .4s forwards}
+@keyframes tIn{from{opacity:0;transform:translateX(60px)}}
+@keyframes tOut{to{opacity:0;transform:translateX(60px)}}
+.xp-float{position:absolute;z-index:1200;font-weight:800;color:var(--gold);font-size:1.35rem;pointer-events:none;transform:translate(-50%,0);animation:floatUp 1.4s ease-out forwards;text-shadow:0 2px 8px rgba(0,0,0,.25)}
+@keyframes floatUp{to{transform:translate(-50%,-80px);opacity:0}}
+.toolbox{position:fixed;top:0;right:0;height:100%;width:min(390px,92vw);background:var(--surface);border-left:1px solid var(--border);z-index:1050;transform:translateX(105%);transition:transform .35s;padding:1.2rem;overflow-y:auto;box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.toolbox.open{transform:none}
+.steps-list{max-height:230px;overflow:auto;font-size:.8rem;margin-top:.4rem}
+
+/* ---------- Certificate ---------- */
+.cert{max-width:920px;margin:0 auto;padding:2.4rem 2rem;text-align:center;border-radius:26px;border:3px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad) border-box;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.cert-kicker{color:var(--accent);font-weight:800;font-size:1rem;letter-spacing:.04em}
+.cert-title{font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;margin:.3rem 0 1rem}
+.cert-team{font-size:clamp(1.9rem,5vw,3.1rem);font-weight:800;animation:popIn .7s .3s both;margin-bottom:.2rem}
+.cert-members{font-size:1.15rem;font-weight:700;color:var(--muted)}
+.stars span{font-size:2.7rem;color:var(--border);display:inline-block;margin:0 .15rem;animation:starIn .6s both}
+.stars span.on{color:var(--gold);text-shadow:0 0 18px color-mix(in srgb,var(--gold) 60%,transparent)}
+@keyframes starIn{from{transform:scale(0) rotate(-180deg);opacity:0}to{transform:none;opacity:1}}
+.cert-rank{font-weight:800;font-size:1.25rem;margin-bottom:.6rem}
+.cert-line{max-width:600px;margin:0 auto 1rem;color:var(--muted)}
+.cert-xp{font-size:2.5rem;font-weight:800;font-family:'IBM Plex Mono',monospace}
+.cert-xp small{font-size:1rem;color:var(--muted)}
+.cert-badges{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin:1rem 0 1.4rem}
+.cb{background:var(--surface2);border-radius:16px;padding:.6rem .9rem;min-width:118px;animation:popIn .5s both}
+.cert-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;border-top:1px dashed var(--border);padding-top:1rem}
+.cert-foot b{display:block;border-bottom:1px solid var(--muted);padding-bottom:.2rem;min-height:1.7rem}
+.cert-foot small{color:var(--muted)}
+.trophy{font-size:4.6rem;display:inline-block;animation:trophyIn 1s cubic-bezier(.2,.9,.3,1.4) both;line-height:1.1}
+@keyframes trophyIn{from{transform:translateY(-120px) scale(.3) rotate(-30deg);opacity:0}}
+
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%}
+  #certCard{box-shadow:none}
+  #loCard{break-before:page;margin-top:0!important}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* ---------- Role assignment ---------- */
+.assign{background:var(--surface);border:2px solid var(--accent2);border-radius:18px;padding:1rem 1.2rem;margin-bottom:1.2rem;box-shadow:var(--shadow)}
+.assign-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+@media(max-width:768px){.assign-grid{grid-template-columns:1fr}}
+.arole{background:var(--surface2);border-radius:14px;padding:.75rem .85rem;border-top:5px solid}
+.arole.alice{border-top-color:var(--alice)}.arole.bob{border-top-color:var(--bob)}.arole.eve{border-top-color:var(--eve)}
+.arole .chip{font-family:'Bricolage Grotesque',sans-serif}
+
+
+/* ---------- Topic explainers ---------- */
+.explain{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--surface)),var(--surface) 70%);border:1px solid var(--border);border-radius:20px;padding:1.3rem 1.4rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.ex-head{display:flex;gap:.9rem;align-items:center;margin-bottom:.7rem}
+.ex-ic{font-size:2.5rem;width:68px;height:68px;border-radius:18px;background:var(--surface);display:grid;place-items:center;border:2px solid var(--accent);flex:0 0 auto;animation:hover 3s ease-in-out infinite}
+.ex-head small{color:var(--accent);font-weight:800;display:block}
+.ex-head h3{margin:0;font-size:clamp(1.35rem,3vw,1.9rem)}
+.ex-lead{font-size:1.13rem;max-width:82ch}
+.ex-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem 1rem;height:100%}
+.ex-box h6{margin-bottom:.35rem}
+.ex-box p,.ex-box li{font-size:.96rem;color:var(--muted);margin-bottom:.2rem}
+.ex-box p b,.ex-box li b{color:var(--text)}
+.ex-box ul{padding-left:1.1rem;margin:0}
+.ex-note{margin-top:.9rem;font-size:.93rem;color:var(--muted);display:flex;gap:1.2rem;flex-wrap:wrap}
+.ex-note span{display:flex;gap:.4rem;align-items:flex-start}
+.vs-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:.8rem;align-items:stretch}
+.vs-grid .mid{display:grid;place-items:center;font-weight:800;color:var(--accent)}
+@media(max-width:768px){.vs-grid{grid-template-columns:1fr}.vs-grid .mid{display:none}}
+
+/* ---------- Guided coach ---------- */
+.coach{border:2px solid var(--accent);border-radius:16px;margin-top:1rem;overflow:hidden;background:var(--surface);scroll-margin-top:150px}
+.coach-top{display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;background:color-mix(in srgb,var(--accent) 9%,var(--surface));flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.who{display:flex;align-items:center;gap:.65rem}
+.who .av{font-size:1.7rem;width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:var(--surface);border:3px solid var(--accent);animation:turn 1.8s ease-in-out infinite;flex:0 0 auto}
+.who.alice .av{border-color:var(--alice)}.who.bob .av{border-color:var(--bob)}.who.eve .av{border-color:var(--eve)}.who.team .av{border-color:var(--accent2)}
+@keyframes turn{50%{transform:scale(1.08) rotate(-4deg)}}
+.who small{display:block;color:var(--muted);font-size:.8rem;font-weight:700}
+.who b{font-size:1.18rem}
+.coach-prog{margin-left:auto;text-align:right}
+.coach-prog small{color:var(--muted);font-weight:700}
+.dots{display:flex;gap:.3rem;justify-content:flex-end;margin-top:.25rem;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background .3s,transform .3s}
+.dots i.d{background:var(--good)}.dots i.c{background:var(--accent);transform:scale(1.35)}
+.coach-body{padding:1rem 1.1rem;animation:screenIn .35s ease both}
+.coach-title{font-size:1.08rem;margin-bottom:.35rem}
+.coach-text{font-size:1.07rem;margin-bottom:.75rem;max-width:75ch}
+.fb{margin-top:.6rem;padding:.7rem .9rem;border-radius:12px;font-size:.98rem;animation:popIn .3s}
+.fb.good{background:color-mix(in srgb,var(--good) 10%,transparent);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
+.fb.bad{background:color-mix(in srgb,var(--bad) 9%,transparent);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent)}
+.formula-live{font-family:'IBM Plex Mono',monospace;font-size:1.25rem;background:var(--surface2);border-radius:12px;padding:.55rem .95rem;display:inline-block}
+.qmark{color:var(--accent)}.qmark.ok{color:var(--good)}
+.chip.big{font-size:1.15rem;padding:.5rem 1.35rem}
+.working{margin-top:.6rem;background:var(--surface2);border-radius:12px;padding:.7rem .9rem;animation:screenIn .3s;overflow-x:auto}
+.coach-start,.coach-done,.coach-lock{padding:1.2rem;text-align:center}
+.coach-lock{color:var(--muted);font-weight:700}
+.secret-locked{background:var(--surface2);border-radius:12px;padding:.6rem .9rem;font-weight:600;display:inline-block}
+.swatch-in{display:inline-block;width:36px;height:36px;border-radius:50%;vertical-align:middle;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--border)}
+.chip.sw{padding:.25rem;border-radius:50%}
+.pit-text{background:var(--surface2);border:2px solid var(--border);border-radius:16px;padding:1rem 1.1rem;font-size:1.12rem;animation:cardIn .45s cubic-bezier(.2,.9,.3,1.2) both}
+.kv{font-family:'IBM Plex Mono',monospace;padding:.3rem 0;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;gap:.5rem}
+.kv b{color:var(--accent)}
+.kv.big{font-size:1.1rem}
+.flash{animation:pop .5s}
+.pubbox{background:var(--surface2);border-radius:12px;padding:.5rem .8rem;font-family:'IBM Plex Mono',monospace}
+.recipe{display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;margin-top:.8rem}
+.rslot{background:var(--surface2);border-radius:12px;padding:.55rem .4rem;text-align:center;border:2px solid transparent;transition:border-color .3s}
+.rslot small{display:block;color:var(--muted);font-size:.75rem;line-height:1.2}
+.rslot b{font-family:'IBM Plex Mono',monospace;font-size:1.25rem}
+.rslot.set{border-color:var(--good)}
+.rslot.secret b{color:var(--alice)}
+@media(max-width:640px){.recipe{grid-template-columns:repeat(3,1fr)}}
+.sigdoc{background:var(--surface2);border-radius:14px;padding:1rem 7.2rem 1rem 1rem;position:relative;min-height:150px;margin-top:.8rem}
+.task-stage{margin-top:.6rem}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container-xl d-flex align-items-center gap-2 gap-md-3 flex-wrap">
+    <div class="brand">🔐 Crypto<em>Quest</em></div>
+    <div class="team-pill" id="teamPill" style="display:none"></div>
+    <div class="xp-wrap flex-grow-1">
+      <div class="xp-label"><span><i class="bi bi-lightning-charge-fill"></i> <b id="xpNum">0</b> XP</span><span id="badgeRow"></span></div>
+      <div class="xp-bar"><div id="xpFill"></div></div>
+    </div>
+    <button class="icon-btn" id="soundBtn" title="Sound on/off" aria-label="Toggle sound"></button>
+    <button class="icon-btn" id="resetBtn" title="Start over" aria-label="Start over"><i class="bi bi-arrow-counterclockwise"></i></button>
+  </div>
+  <nav class="stepper container-xl" id="stepper" aria-label="Progress"></nav>
+</header>
+
+<main class="container-xl py-3 pb-5">
+
+<!-- ================= HOME ================= -->
+<section class="screen" id="s-home">
+  <div class="row align-items-center hero g-4">
+    <div class="col-lg-7">
+      <h1 class="hero-title">Two keys, one secret, zero trust in the wire.</h1>
+      <p class="lead">Sit together as a team of three around one screen. The page guides you step by step, tells you whose turn it is, and does the heavy arithmetic, so you can focus on <b>how</b> public-key cryptography works and <b>why</b> it's secure.</p>
+      <button class="btn-q lg" data-go="team"><i class="bi bi-people-fill"></i> Form your team</button>
+    </div>
+    <div class="col-lg-5"><div class="mixer" aria-hidden="true"><div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div><div class="lock">🔑</div></div></div>
+  </div>
+
+  <div class="explain mt-3">
+    <div class="ex-head"><span class="ex-ic">🔐</span><div><small>Start here</small><h3>What is asymmetric (public-key) cryptography?</h3></div></div>
+    <p class="ex-lead">Cryptography protects messages from people who shouldn't <b>read</b> them or <b>change</b> them. It comes in two big families, and today's activity is about the second one.</p>
+    <div class="vs-grid">
+      <div class="ex-box"><h6>🔑 Symmetric: one shared key</h6><p>The <b>same key</b> locks and unlocks, like a house key. It's very fast (AES protects your Wi-Fi and stored files).</p><p><b>The problem:</b> both people must already have the same key. How do you hand it to someone across the internet without an eavesdropper copying it?</p></div>
+      <div class="mid">vs</div>
+      <div class="ex-box"><h6>🔐 Asymmetric: a pair of keys</h6><p>Everyone has a <b>public key</b> and a <b>private key</b>. Think of the public key as an <b>open padlock</b> you give to anyone, and the private key as the <b>only key</b> that opens it.</p><p>Anyone can lock a box for you. Only you can open it. No secret ever has to be shared first.</p></div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-md-4"><div class="ex-box"><h6>🤝 Mission 1: Diffie–Hellman</h6><p>Two strangers <b>agree on a secret key</b> while everyone listens.</p></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🔐 Mission 2: RSA</h6><p><b>Lock</b> with someone's public key; only their private key <b>unlocks</b>.</p></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>✍️ Mission 3: Signatures</h6><p><b>Prove who wrote</b> a message and that nobody changed it.</p></div></div>
+    </div>
+    <div class="ex-note"><span>🌍 <span>In real life they work as a team: public-key crypto safely sets up a key, then fast symmetric crypto protects the data. That's what happens every time the 🔒 padlock appears in your browser.</span></span></div>
+  </div>
+  <div class="row g-3 mt-2">
+    <div class="col-sm-6 col-lg-3"><div class="mcard" style="border-left-color:var(--alice)"><div class="ic">🤝</div><h5>Mission 1: Diffie–Hellman</h5><p>Mix paint, swap numbers in public, try to crack a secret as the eavesdropper, and watch a man-in-the-middle attack.</p></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="mcard" style="border-left-color:var(--bob)"><div class="ic">🔐</div><h5>Mission 2: RSA</h5><p>Build a real key pair from two primes, send a locked message, and spot dangerous mistakes.</p></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="mcard" style="border-left-color:var(--accent2)"><div class="ic">✍️</div><h5>Mission 3: Signatures</h5><p>Sign a message, catch a forgery, choose MAC or signature, and add points on an elliptic curve.</p></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="mcard" style="border-left-color:var(--gold)"><div class="ic">⚡</div><h5>Boss battle</h5><p>Eight timed questions against Eve-9000, then your team certificate and learning outcomes.</p></div></div>
+  </div>
+  <div class="card-x mt-4">
+    <h5 class="mb-2"><i class="bi bi-info-circle"></i> How it works</h5>
+    <div class="timeline">
+      <div class="tl"><b>1</b>Name your team and its three members.</div>
+      <div class="tl"><b>2</b>Decide who is the Sender, the Receiver and the Eavesdropper. Roles rotate each mission.</div>
+      <div class="tl"><b>3</b>The coach box shows whose turn it is and what to tap.</div>
+      <div class="tl"><b>4</b>Stuck on a sum? Tap <b>Show me how</b> for the full working.</div>
+    </div>
+    <p class="small muted mt-2 mb-0">Progress saves in this browser, so a team can close the tab and carry on later on the same device.</p>
+  </div>
+</section>
+
+<!-- ================= TEAM ================= -->
+<section class="screen" id="s-team">
+  <div class="card-x mx-auto mt-3" style="max-width:780px">
+    <h2>Form your team of three</h2>
+    <p class="muted">One person holds the laptop or phone; all three sit together and decide together. Write your names, then choose who takes each role.</p>
+    <label class="lbl" for="teamName">Team name</label>
+    <input id="teamName" class="inp" maxlength="30" placeholder="e.g. Team Shaheen">
+    <label class="lbl">Team emblem</label>
+    <div class="emblems" id="emblems"></div>
+    <div class="row g-2 mt-1">
+      <div class="col-md-4"><label class="lbl" for="mem0">Member 1</label><input id="mem0" class="inp" maxlength="24" placeholder="e.g. Hamza"></div>
+      <div class="col-md-4"><label class="lbl" for="mem1">Member 2</label><input id="mem1" class="inp" maxlength="24" placeholder="e.g. Fatima"></div>
+      <div class="col-md-4"><label class="lbl" for="mem2">Member 3</label><input id="mem2" class="inp" maxlength="24" placeholder="e.g. Usman"></div>
+    </div>
+    <div class="assign mt-4 mb-1" data-m="m1"></div>
+    <p class="small muted mb-0">In Missions 2 and 3 the roles rotate automatically so everyone tries every job. You can still change them at the top of each mission.</p>
+    <button class="btn-q lg mt-4" id="lockTeam"><i class="bi bi-shield-lock-fill"></i> Save team and start Mission 1</button>
+  </div>
+</section>
+
+<!-- ================= MISSION 1 ================= -->
+<section class="screen" id="s-m1">
+  <div class="m-head">
+    <div class="m-num">1</div>
+    <div><div class="m-sub">Mission 1 · earns 🤝 Key Exchanger</div><h2>Public-key principles and Diffie–Hellman</h2></div>
+    <div class="m-prog" data-m="m1"><small class="muted"><span class="cnt">0</span> of 4 tasks done</small><div class="bar"><div></div></div></div>
+  </div>
+  <div class="explain">
+    <div class="ex-head"><span class="ex-ic">🤝</span><div><small>What are we learning in Mission 1?</small><h3>What is Diffie–Hellman key exchange?</h3></div></div>
+    <p class="ex-lead">A method that lets <b>two people who have never met agree on the same secret key</b> while talking over a channel that anyone can listen to. The secret key itself is <b>never sent</b>: each side builds it from its own private secret plus the other side's public value.</p>
+    <div class="row g-3">
+      <div class="col-md-4"><div class="ex-box"><h6>🧠 In plain words</h6><p>Start from a shared public value, mix in your own secret, swap the results in public, then mix in your secret again. Both sides land on the same answer. The eavesdropper sees everything that was sent but can't “un-mix” it.</p></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🌍 Where you meet it every day</h6><ul><li>Every <b>HTTPS</b> website (TLS uses a modern elliptic-curve version)</li><li><b>WhatsApp</b> and <b>Signal</b> chats</li><li><b>VPNs</b> such as WireGuard and IPsec</li><li><b>SSH</b> logins to servers</li></ul></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🎯 What you'll do in this mission</h6><p>Mix paint, run the real maths with small numbers, play the eavesdropper trying to crack it, and watch how an attacker in the middle can fool it.</p></div></div>
+    </div>
+    <div class="ex-note"><span>📜 <span>Published in 1976 by Whitfield Diffie and Martin Hellman: the first public description of public-key cryptography.</span></span><span>⚠️ <span>It only <b>agrees a key</b>. On its own it doesn't prove who you are talking to.</span></span></div>
+  </div>
+  <details class="brief" open>
+    <summary><i class="bi bi-journal-text"></i> Key facts and learning outcomes <span class="muted fw-normal small">read together, about 5 minutes</span><i class="bi bi-chevron-down chev"></i></summary>
+    <div class="brief-body">
+      <div class="lo-box" data-lo="m1"></div>
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🧩 The problem</h5><p>Symmetric ciphers like AES need both sides to <b>already share a key</b>. How can two strangers agree one over a network that Ehsan can read?</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🗝️ Key pairs</h5><p>Each person holds a <b>public key</b> anyone may see and a <b>private key</b> never shared. What one key does, only the other can undo or check.</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🤝 Diffie–Hellman</h5><p>Public numbers <b>p</b> and <b>g</b>. Ayesha keeps a secret <b>a</b>, Bilal keeps <b>b</b>. They swap A = g<sup>a</sup> mod p and B = g<sup>b</sup> mod p, and both end with the same <b>s</b>.</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🕵️ Why Ehsan fails</h5><p>Getting a back from A is the <b>discrete logarithm problem</b>: easy forwards, infeasible backwards. But plain DH can't tell <b>who</b> sent A, so a man-in-the-middle can swap it.</p></div></div>
+      </div>
+    </div>
+  </details>
+  <div class="assign" data-m="m1"></div>
+
+  <div class="task" id="t-m1-paint">
+    <div class="task-head"><span class="task-num">1A</span><h3>🎨 Paint-mixing lab</h3><span class="pts">100 XP</span></div>
+    <p class="muted mb-0">The classic picture of Diffie–Hellman: mixing paint is easy, un-mixing it is impossible.</p>
+    <div class="paint-stage task-stage">
+      <div class="party alice">
+        <div class="avatar">👩‍💻</div><b>Ayesha</b> <small class="muted">· Sender</small>
+        <div class="slots"><div class="slot"><div class="blob" id="pa-sec"></div>secret</div><div class="slot"><div class="blob" id="pa-mix"></div>mix sent</div><div class="slot"><div class="blob" id="pa-recv"></div>received</div></div>
+        <div class="slot mt-2"><div class="blob big" id="pa-final"></div>shared colour</div>
+      </div>
+      <div class="channel">
+        <div class="slot"><div class="blob filled" style="background:#f2c94c"></div><b style="color:var(--text)">public yellow</b>everyone sees this</div>
+        <div class="wire" aria-hidden="true"></div>
+        <div class="eve-box"><div class="lbl-e">👁️ Ehsan intercepts</div><div class="eve-items" id="eve-items"><span class="small muted">Nothing yet</span></div></div>
+      </div>
+      <div class="party bob">
+        <div class="avatar">👨‍💻</div><b>Bilal</b> <small class="muted">· Receiver</small>
+        <div class="slots"><div class="slot"><div class="blob" id="pb-recv"></div>received</div><div class="slot"><div class="blob" id="pb-mix"></div>mix sent</div><div class="slot"><div class="blob" id="pb-sec"></div>secret</div></div>
+        <div class="slot mt-2"><div class="blob big" id="pb-final"></div>shared colour</div>
+      </div>
+    </div>
+    <div class="coach" id="g-m1-paint"></div>
+  </div>
+
+  <div class="task" id="t-m1-num">
+    <div class="task-head"><span class="task-num">1B</span><h3>🔢 Diffie–Hellman with real numbers</h3><span class="pts">150 XP</span></div>
+    <p class="muted mb-0">Same idea as the paint, now with small numbers. You make the choices; the coach helps with the arithmetic.</p>
+    <div class="paint-stage task-stage">
+      <div class="party alice text-start">
+        <h6>👩‍💻 Ayesha <small class="muted">· Sender</small></h6>
+        <div class="kv"><span>secret a</span><b id="n-a">?</b></div>
+        <div class="kv"><span>sends A</span><b id="n-A">?</b></div>
+        <div class="kv"><span>receives B</span><b id="n-rB">?</b></div>
+        <div class="kv big"><span>shared s</span><b id="n-sA">?</b></div>
+      </div>
+      <div class="channel">
+        <div class="pubbox">public: p = 23, g = 5</div>
+        <div class="wire" aria-hidden="true"></div>
+        <div class="eve-box"><div class="lbl-e">👁️ Ehsan's notebook</div><div class="mono small mt-1" id="n-eve">p = 23, g = 5</div></div>
+      </div>
+      <div class="party bob text-start">
+        <h6>👨‍💻 Bilal <small class="muted">· Receiver</small></h6>
+        <div class="kv"><span>secret b</span><b id="n-b">?</b></div>
+        <div class="kv"><span>sends B</span><b id="n-B">?</b></div>
+        <div class="kv"><span>receives A</span><b id="n-rA">?</b></div>
+        <div class="kv big"><span>shared s</span><b id="n-sB">?</b></div>
+      </div>
+    </div>
+    <div class="coach" id="g-m1-num"></div>
+  </div>
+
+  <div class="task" id="t-m1-eve">
+    <div class="task-head"><span class="task-num">1C</span><h3>🕵️ Be Ehsan: try to crack the secret</h3><span class="pts">100 XP</span></div>
+    <p class="muted">Intercepted: <code>p = 23</code>, <code>g = 5</code> and another Ayesha's public value <code>A = <b id="eve-A"></b></code>. Each tile tries one guess x and shows 5<sup>x</sup> mod 23.</p>
+    <div class="d-flex justify-content-between small mb-2"><span>Guesses so far: <b id="eve-tries">0</b></span><span class="muted">Looking for the value <b id="eve-A2"></b></span></div>
+    <div class="tiles" id="eve-tiles"></div>
+    <div class="coach" id="g-m1-eve"></div>
+  </div>
+
+  <div class="task" id="t-m1-mitm">
+    <div class="task-head"><span class="task-num">1D</span><h3>🎭 Mansoor in the middle</h3><span class="pts">100 XP</span></div>
+    <p class="muted mb-0">An <i>active</i> attacker can change messages, not just read them.</p>
+    <div class="mitm">
+      <div class="node" id="mm-a">👩‍💻<small>Ayesha</small></div>
+      <div class="mm-line"></div>
+      <div class="node" id="mm-m">😈<small>Mansoor</small></div>
+      <div class="mm-line"></div>
+      <div class="node" id="mm-b">👨‍💻<small>Bilal</small></div>
+    </div>
+    <div class="coach" id="g-m1-mitm"></div>
+  </div>
+</section>
+
+<!-- ================= MISSION 2 ================= -->
+<section class="screen" id="s-m2">
+  <div class="m-head">
+    <div class="m-num">2</div>
+    <div><div class="m-sub">Mission 2 · earns 🔐 RSA Forgemaster</div><h2>RSA: construction, use and pitfalls</h2></div>
+    <div class="m-prog" data-m="m2"><small class="muted"><span class="cnt">0</span> of 3 tasks done</small><div class="bar"><div></div></div></div>
+  </div>
+  <div class="explain">
+    <div class="ex-head"><span class="ex-ic">🔐</span><div><small>What are we learning in Mission 2?</small><h3>What is RSA?</h3></div></div>
+    <p class="ex-lead">A public-key system that can <b>encrypt</b> (anyone locks a message with your public key; only your private key unlocks it) and <b>sign</b>. Its keys are built from <b>two secret prime numbers</b>.</p>
+    <div class="row g-3">
+      <div class="col-md-4"><div class="ex-box"><h6>🧠 In plain words</h6><p>Multiplying two primes is easy. Splitting the answer back into those two primes is incredibly hard when the numbers are hundreds of digits long. RSA's private key hides behind that difficulty.</p></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🌍 Where you meet it every day</h6><ul><li>The <b>certificate</b> behind your browser's padlock</li><li>Signing <b>software and app updates</b></li><li>Secure <b>email</b> (S/MIME, PGP)</li><li><b>Smart cards</b> and banking systems</li></ul></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🎯 What you'll do in this mission</h6><p>Build a real (tiny) RSA key pair from two primes, lock and send a secret number, then judge real-world mistakes that break RSA.</p></div></div>
+    </div>
+    <div class="ex-note"><span>📜 <span>Invented in 1977 by Ron Rivest, Adi Shamir and Leonard Adleman at MIT. “RSA” is their initials.</span></span><span>💡 <span>RSA is slow, so in practice it protects small things like keys, and AES encrypts the actual data.</span></span></div>
+  </div>
+  <details class="brief" open>
+    <summary><i class="bi bi-journal-text"></i> Key facts and learning outcomes <span class="muted fw-normal small">read together, about 5 minutes</span><i class="bi bi-chevron-down chev"></i></summary>
+    <div class="brief-body">
+      <div class="lo-box" data-lo="m2"></div>
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>⚒️ Making keys</h5><p>Pick primes <b>p, q</b>. Then <b>n = p × q</b> and <b>φ(n) = (p−1)(q−1)</b>. Choose <b>e</b> sharing no factor with φ. Find <b>d</b> so that e × d leaves remainder 1 when divided by φ.</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>📬 Using them</h5><p>Public key <b>(e, n)</b>, private key <b>(d, n)</b>. To send Bilal a secret, lock it with <b>Bilal's public key</b>; only his private key opens it.</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🧱 Why it's secure</h5><p>To find d you need φ(n), which needs p and q. Getting those from n means <b>factoring</b> it: easy for small n, impossible for a 2048-bit n.</p></div></div>
+        <div class="col-md-6 col-xl-3"><div class="fact"><h5>🕳️ Pitfalls</h5><p>“Textbook” RSA is predictable. Always use padding: <b>OAEP</b> to encrypt, <b>PSS</b> to sign. Avoid small keys and weak or related primes.</p></div></div>
+      </div>
+      <div class="formula">lock: c = m<sup>e</sup> mod n &nbsp;&nbsp;&nbsp; unlock: m = c<sup>d</sup> mod n</div>
+    </div>
+  </details>
+  <div class="assign" data-m="m2"></div>
+
+  <div class="task" id="t-m2-forge">
+    <div class="task-head"><span class="task-num">2A</span><h3>⚒️ The key forge</h3><span class="pts">200 XP</span></div>
+    <p class="muted mb-0">Build Bilal's key pair one ingredient at a time. Watch the recipe card fill up.</p>
+    <div class="recipe task-stage">
+      <div class="rslot secret" id="rs-p"><small>prime p</small><b>?</b></div>
+      <div class="rslot secret" id="rs-q"><small>prime q</small><b>?</b></div>
+      <div class="rslot" id="rs-n"><small>n = p × q</small><b>?</b></div>
+      <div class="rslot secret" id="rs-phi"><small>φ(n)</small><b>?</b></div>
+      <div class="rslot" id="rs-e"><small>public e</small><b>?</b></div>
+      <div class="rslot secret" id="rs-d"><small>private d</small><b>?</b></div>
+    </div>
+    <p class="small muted mt-1 mb-0">Pink values must stay secret; blue values are public.</p>
+    <div class="keys" id="f-keys" hidden></div>
+    <div class="coach" id="g-m2-forge"></div>
+  </div>
+
+  <div class="task" id="t-m2-msg">
+    <div class="task-head"><span class="task-num">2B</span><h3>✉️ Send a locked message</h3><span class="pts">150 XP</span></div>
+    <p class="muted mb-0">Ayesha sends Bilal a secret number using the keys you just forged.</p>
+    <div class="paint-stage task-stage">
+      <div class="party alice text-start">
+        <h6>👩‍💻 Ayesha <small class="muted">· Sender</small></h6>
+        <div class="kv"><span>uses Bilal's public key</span><b class="k-pub">?</b></div>
+        <div class="kv"><span>secret m</span><b id="e-m">?</b></div>
+        <div class="kv big"><span>locked c</span><b id="e-c">?</b></div>
+      </div>
+      <div class="channel">
+        <div class="wire" aria-hidden="true"></div>
+        <div class="eve-box"><div class="lbl-e">👁️ Ehsan sees</div><div class="mono small mt-1" id="e-eve">nothing yet</div></div>
+      </div>
+      <div class="party bob text-start">
+        <h6>👨‍💻 Bilal <small class="muted">· Receiver</small></h6>
+        <div class="kv"><span>has private key d</span><b class="k-d">?</b></div>
+        <div class="kv"><span>receives c</span><b id="e-rc">?</b></div>
+        <div class="kv big"><span>unlocked m</span><b id="e-dm">?</b></div>
+      </div>
+    </div>
+    <div class="coach" id="g-m2-msg"></div>
+  </div>
+
+  <div class="task" id="t-m2-pit">
+    <div class="task-head"><span class="task-num">2C</span><h3>🕳️ Pitfall hunter</h3><span class="pts">210 XP</span></div>
+    <p class="muted mb-0">RSA is only as strong as the way it's used. Seven real-world situations: safe or broken? Get all seven right first time for a bonus badge.</p>
+    <div class="coach" id="g-m2-pit"></div>
+  </div>
+</section>
+
+<!-- ================= MISSION 3 ================= -->
+<section class="screen" id="s-m3">
+  <div class="m-head">
+    <div class="m-num">3</div>
+    <div><div class="m-sub">Mission 3 · earns ✍️ Signature Sentinel</div><h2>Digital signatures, DSS, ElGamal and elliptic curves</h2></div>
+    <div class="m-prog" data-m="m3"><small class="muted"><span class="cnt">0</span> of 4 tasks done</small><div class="bar"><div></div></div></div>
+  </div>
+  <div class="explain">
+    <div class="ex-head"><span class="ex-ic">✍️</span><div><small>What are we learning in Mission 3?</small><h3>What is a digital signature?</h3></div></div>
+    <p class="ex-lead">The digital version of a handwritten signature <b>plus a tamper-proof seal</b>. The sender signs with their <b>private key</b>; anyone can check it with the sender's <b>public key</b>. Change even one character and the check fails.</p>
+    <div class="row g-3">
+      <div class="col-md-4"><div class="ex-box"><h6>🧠 In plain words</h6><p>Signing means transforming the message's fingerprint (its <b>hash</b>) with your private key. Only you can make it; everyone can check it. It gives three guarantees: <b>who</b> sent it, <b>unchanged</b> since signing, and the sender <b>can't deny</b> it later.</p></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🌍 Where you meet it every day</h6><ul><li><b>HTTPS certificates</b> (signed by trusted authorities)</li><li><b>App store</b> and <b>Windows/Android updates</b></li><li><b>E-signed PDFs</b> and contracts</li><li><b>Cryptocurrency</b> transactions (Bitcoin uses ECDSA)</li></ul></div></div>
+      <div class="col-md-4"><div class="ex-box"><h6>🎯 What you'll do in this mission</h6><p>Sign a message and catch a forgery, decide when a MAC is enough, draw point addition on an elliptic curve, and check the standards: DSS and ElGamal.</p></div></div>
+    </div>
+    <div class="ex-note"><span>📜 <span>RSA signatures (1977), ElGamal signatures (1985), NIST's Digital Signature Standard (1994, now FIPS 186-5). Elliptic-curve cryptography was proposed by Neal Koblitz and Victor Miller in the mid-1980s.</span></span></div>
+  </div>
+  <details class="brief" open>
+    <summary><i class="bi bi-journal-text"></i> Key facts and learning outcomes <span class="muted fw-normal small">read together, about 5 minutes</span><i class="bi bi-chevron-down chev"></i></summary>
+    <div class="brief-body">
+      <div class="lo-box" data-lo="m3"></div>
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-4"><div class="fact"><h5>✍️ Signing</h5><p>Ayesha takes the message's fingerprint (hash) and transforms it with her <b>private key</b>. Anyone checks it with her <b>public key</b>. It proves integrity, who sent it, and <b>non-repudiation</b>.</p></div></div>
+        <div class="col-md-6 col-xl-4"><div class="fact"><h5>🔑 Why a MAC can't do this</h5><p>A MAC uses a <b>shared</b> key, so Bilal could have made the tag himself. It can't convince an outsider, so there's no non-repudiation.</p></div></div>
+        <div class="col-md-6 col-xl-4"><div class="fact"><h5>📜 DSS (FIPS 186)</h5><p>NIST's Digital Signature Standard. FIPS 186-5 (2023) approves <b>RSA, ECDSA and EdDSA</b>; the original DSA is kept only for checking older signatures.</p></div></div>
+        <div class="col-md-6 col-xl-6"><div class="fact"><h5>🎲 ElGamal</h5><p>A discrete-log signature (DSA and ECDSA descend from it). Every signature uses a fresh random <b>k</b>. Reuse k once and the private key can be worked out.</p></div></div>
+        <div class="col-md-12 col-xl-6"><div class="fact"><h5>🌀 Elliptic curves</h5><p>Points on a curve can be “added” with a line-and-reflect rule. Security rests on the <b>ECDLP</b>. A 256-bit curve key is about as strong as 3072-bit RSA.</p></div></div>
+      </div>
+      <div class="formula">sign: s = h<sup>d</sup> mod n &nbsp;&nbsp;&nbsp; check: s<sup>e</sup> mod n = h ?</div>
+    </div>
+  </details>
+  <div class="assign" data-m="m3"></div>
+
+  <div class="task" id="t-m3-sign">
+    <div class="task-head"><span class="task-num">3A</span><h3>🖋️ Sign, send and catch a forgery</h3><span class="pts">200 XP</span></div>
+    <p class="muted mb-0">The key pair you forged in Mission 2 now belongs to Ayesha.</p>
+    <div class="sigdoc task-stage" id="sigdoc">
+      <div class="kv"><span>📄 message</span><b id="sg-m">—</b></div>
+      <div class="kv"><span>🔎 fingerprint h</span><b id="sg-h">—</b></div>
+      <div class="kv"><span>✍️ signature s</span><b id="sg-s">—</b></div>
+      <div class="kv"><span>✔ Bilal's check v</span><b id="sg-v">—</b></div>
+      <div id="sg-seal"></div>
+    </div>
+    <div id="sg-hash"></div>
+    <div class="coach" id="g-m3-sign"></div>
+  </div>
+
+  <div class="task" id="t-m3-court">
+    <div class="task-head"><span class="task-num">3B</span><h3>⚖️ MAC or signature?</h3><span class="pts">150 XP</span></div>
+    <p class="muted mb-0">Both detect tampering. Only one proves <i>who</i> to an outsider.</p>
+    <div class="coach" id="g-m3-court"></div>
+  </div>
+
+  <div class="task" id="t-m3-curve">
+    <div class="task-head"><span class="task-num">3C</span><h3>🌀 Elliptic-curve playground</h3><span class="pts">150 XP</span></div>
+    <p class="muted mb-0">The curve <code>y² = x³ − x + 1</code>. You'll add two points by drawing.</p>
+    <div class="cv-wrap"><canvas id="curve" aria-label="Elliptic curve plot"></canvas></div>
+    <div class="cv-ctrl">
+      <div><label class="lbl c-alice" for="cv-px">Point P: x = <span id="cv-pxv"></span></label><input type="range" class="range" id="cv-px" min="-1.32" max="2.2" step="0.01" value="-1"><select class="inp mt-1" id="cv-ps" aria-label="P branch"><option value="1">upper half</option><option value="-1">lower half</option></select></div>
+      <div><label class="lbl c-bob" for="cv-qx">Point Q: x = <span id="cv-qxv"></span></label><input type="range" class="range" id="cv-qx" min="-1.32" max="2.2" step="0.01" value="0.4"><select class="inp mt-1" id="cv-qs" aria-label="Q branch"><option value="1">upper half</option><option value="-1">lower half</option></select></div>
+    </div>
+    <div class="cv-info" id="cv-info">The coach will tell you when to move the points.</div>
+    <div id="cv-sizes" class="step-box" hidden></div>
+    <div class="coach" id="g-m3-curve"></div>
+  </div>
+
+  <div class="task" id="t-m3-quiz">
+    <div class="task-head"><span class="task-num">3D</span><h3>🎲 ElGamal, DSS and ECC check</h3><span class="pts">120 XP</span></div>
+    <p class="muted mb-0">Three questions. Every answer is in the Mission 3 briefing above.</p>
+    <div class="coach" id="g-m3-quiz"></div>
+  </div>
+</section>
+
+<!-- ================= BOSS ================= -->
+<section class="screen" id="s-boss">
+  <div class="m-head">
+    <div class="m-num">⚡</div>
+    <div><div class="m-sub">Final challenge · earns 🏆 Crypto Champion</div><h2>Boss battle: Eve-9000</h2></div>
+  </div>
+  <div class="card-x" id="boss-box"></div>
+</section>
+
+<!-- ================= CERTIFICATE ================= -->
+<section class="screen" id="s-cert">
+  <div id="printArea">
+  <div class="cert mt-3" id="certCard">
+    <div class="trophy">🏆</div>
+    <div class="cert-kicker">Certificate of achievement</div>
+    <div class="cert-title">Asymmetric Cryptography Quest</div>
+    <p class="muted mb-1">This certifies that team</p>
+    <div class="cert-team" id="c-team"></div>
+    <p class="cert-members" id="c-members"></p>
+    <div class="stars" id="c-stars"></div>
+    <div class="cert-rank" id="c-rank"></div>
+    <p class="cert-line">completed every mission: agreeing a secret with Diffie–Hellman, forging and using an RSA key pair, and signing messages nobody can forge.</p>
+    <div class="cert-xp"><span id="c-xp">0</span> <small>of <span id="c-max"></span> XP</small></div>
+    <div class="cert-badges" id="c-badges"></div>
+    <div class="cert-foot"><div><b id="c-date"></b><small>Date</small></div><div><b id="c-course"></b><small>Course</small></div><div><b id="c-inst">&nbsp;</b><small>Instructor</small></div></div>
+  </div>
+  <div class="card-x mt-4 mx-auto" style="max-width:920px" id="loCard">
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1"><h4 class="m-0">🎓 Learning outcomes achieved</h4><span class="ms-auto fw-bold" style="color:var(--good)" id="lo-count"></span></div>
+    <p class="muted">Your team can now:</p>
+    <div class="row g-3 lo-anim" id="lo-all"></div>
+  </div>
+  </div>
+  <div class="text-center mt-3 d-flex gap-2 justify-content-center flex-wrap">
+    <button class="btn-q" id="c-dl"><i class="bi bi-download"></i> Download certificate (PNG)</button>
+    <button class="btn-g" id="c-print"><i class="bi bi-printer"></i> Print</button>
+    <button class="btn-g" id="c-party">🎉 Celebrate again</button>
+  </div>
+  <div class="card-x mt-4 mx-auto" style="max-width:920px">
+    <h5>Before you pack up: one minute each</h5>
+    <p class="muted mb-2">Each team member explains one of these to the other two, in their own words:</p>
+    <div class="row g-2">
+      <div class="col-md-4"><div class="fact"><h5>🤝</h5><p>Why Ehsan saw every number in Diffie–Hellman but still couldn't get the secret.</p></div></div>
+      <div class="col-md-4"><div class="fact"><h5>🔐</h5><p>Which key locks a secret message, which key signs, and why it's that way round.</p></div></div>
+      <div class="col-md-4"><div class="fact"><h5>🕳️</h5><p>One RSA or signature mistake you will never make in real code.</p></div></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true"><div class="overlay-card" id="overlayCard"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* =========================================================
+   Edit these to personalise the certificate
+   ========================================================= */
+const CONFIG = {
+  course: "Information Security",
+  instructor: "",      // e.g. "Engr. Your Name" (leave blank for a signature line)
+};
+
+/* ---------- Helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val = (x, ctx) => typeof x === 'function' ? x(ctx) : x;
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function modpow(b, e, m) { b = BigInt(b); e = BigInt(e); m = BigInt(m); if (m === 1n) return 0; let r = 1n; b = ((b % m) + m) % m; while (e > 0n) { if (e & 1n) r = r * b % m; e >>= 1n; b = b * b % m; } return Number(r); }
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
+function modinv(e, m) { for (let d = 1; d < m; d++) if ((e * d) % m === 1) return d; return null; }
+function isPrime(n) { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; }
+function smallestFactor(n) { for (let i = 2; i * i <= n; i++) if (n % i === 0) return i; return n; }
+function shuffle(a) { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function shake(e) { e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function countUp(e, to, ms = 1500) { const t0 = performance.now(); const f = t => { const k = Math.min(1, (t - t0) / ms); e.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+function setv(id, v) { const e = document.getElementById(id); if (!e) return; e.innerHTML = v; e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); }
+function makeChoices(ans, range, near = []) {
+  const set = new Set([ans]);
+  near.forEach(n => { if (set.size < 3 && Number.isInteger(n) && n >= 0 && n !== ans) set.add(n); });
+  let guard = 0;
+  while (set.size < 3 && guard++ < 200) { const r = Math.floor(Math.random() * Math.max(range, 6)); if (r !== ans) set.add(r); }
+  return shuffle([...set]);
+}
+
+/* ---------- Worked-solution builders ---------- */
+function powWorking(b, e, m) {
+  if (e <= 12) {
+    let r = 1, rows = '';
+    for (let i = 1; i <= e; i++) { const prod = r * b, nr = prod % m; rows += `<tr><td>${b}<sup>${i}</sup></td><td>${i === 1 ? b : `${r} × ${b} = ${prod}`}</td><td>remainder ÷ ${m} → <b>${nr}</b></td></tr>`; r = nr; }
+    return `<p class="small mb-1">Multiply by ${b} again and again. After every step keep only the <b>remainder after dividing by ${m}</b>, so the numbers stay small.</p><div class="table-responsive"><table class="ktable mono">${rows}</table></div><p class="mb-0 mt-1">Answer: <b class="hl">${r}</b></p>`;
+  }
+  const bits = e.toString(2); let acc = 1; const lines = [];
+  for (const bit of bits) { const sq = acc * acc % m; let l = `${acc}² → remainder ${sq}`; acc = sq; if (bit === '1') { const nx = acc * b % m; l += `, then × ${b} → remainder ${nx}`; acc = nx; } lines.push(`<tr><td>bit ${bit}</td><td>${l}</td></tr>`); }
+  return `<p class="small mb-1">Multiplying ${e} times would take ages, so computers use a shortcut called <b>square-and-multiply</b>. Write ${e} in binary (<b>${bits}</b>). For each bit: square the running answer, and if the bit is 1 also multiply by ${b}. Keep the remainder after dividing by ${m} each time.</p><div class="table-responsive"><table class="ktable mono">${lines.join('')}</table></div><p class="mb-0 mt-1">Answer: <b class="hl">${acc}</b></p>`;
+}
+function invWorking(e, phi) {
+  let rows = '';
+  for (let k = 1; k <= e; k++) { const v = k * phi + 1, ok = v % e === 0; rows += `<tr class="${ok ? 'hit' : ''}"><td>${k}</td><td>${k} × ${phi} + 1 = ${v}</td><td>${ok ? `÷ ${e} = <b>${v / e}</b> ✅` : `÷ ${e} is not whole ✗`}</td></tr>`; if (ok) break; }
+  return `<p class="small mb-1">We need e × d to be <b>one more than a multiple of φ</b>. So test φ + 1, 2φ + 1, 3φ + 1 … and stop at the first one that divides evenly by e = ${e}.</p><div class="table-responsive"><table class="ktable mono"><tr><th>k</th><th>k × φ + 1</th><th>÷ e?</th></tr>${rows}</table></div>`;
+}
+
+/* ---------- State ---------- */
+const KEY = 'cryptoquest-asym-v3';
+const ORDER = ['home', 'team', 'm1', 'm2', 'm3', 'boss', 'cert'];
+const MAX_XP = 450 + 560 + 620 + 400;
+function defaultState() {
+  return { team: { name: '', emblem: '🛡️', members: ['', '', ''] }, xp: 0, done: {}, unlocked: 1, screen: 'home', rsa: null, badges: [], eveX: 3 + Math.floor(Math.random() * 18), boss: null, sound: true,
+    roles: { m1: { alice: 0, bob: 1, eve: 2 }, m2: { alice: 1, bob: 2, eve: 0 }, m3: { alice: 2, bob: 0, eve: 1 } } };
+}
+let S = defaultState();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function load() { try { const t = localStorage.getItem(KEY); if (t) S = Object.assign(defaultState(), JSON.parse(t)); } catch (e) {} }
+
+/* ---------- Sound ---------- */
+let actx;
+function tone(freq, dur = .12, type = 'sine', when = 0, vol = .07) {
+  if (!S.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime + when, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
+  } catch (e) {}
+}
+const sfx = {
+  good() { [523, 659, 784].forEach((f, i) => tone(f, .16, 'triangle', i * .08)); },
+  bad() { tone(170, .25, 'sawtooth', 0, .045); },
+  click() { tone(880, .05, 'square', 0, .025); },
+  whoosh() { tone(320, .3, 'sine', 0, .04); tone(640, .22, 'sine', .1, .03); },
+  fanfare() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .24, 'triangle', i * .13, .08)); }
+};
+
+/* ---------- UI feedback ---------- */
+function toast(html, kind = 'good') { const t = el('div', 'toastx ' + kind, html); $('#toasts').appendChild(t); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 3000); }
+function floatXP(p, e) { const r = e ? e.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0 }; const f = el('div', 'xp-float', '+' + p + ' XP'); f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + window.scrollY - 10) + 'px'; document.body.appendChild(f); setTimeout(() => f.remove(), 1400); }
+function celebrate(big = false) {
+  if (typeof confetti !== 'function') return;
+  const colors = ['#3047d9', '#0f9d8c', '#c2347a', '#f2c94c', '#2c6be0'];
+  confetti({ particleCount: big ? 180 : 110, spread: 100, origin: { y: .6 }, colors, zIndex: 3000 });
+  const end = Date.now() + (big ? 3500 : 1100);
+  (function frame() { confetti({ particleCount: 5, angle: 60, spread: 65, origin: { x: 0, y: .75 }, colors, zIndex: 3000 }); confetti({ particleCount: 5, angle: 120, spread: 65, origin: { x: 1, y: .75 }, colors, zIndex: 3000 }); if (Date.now() < end) requestAnimationFrame(frame); })();
+}
+function showOverlay(html) { $('#overlayCard').innerHTML = html; $('#overlay').classList.add('show'); }
+function hideOverlay() { $('#overlay').classList.remove('show'); }
+function fly(from, to, { color = 'var(--accent)', text = '' } = {}) {
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const f = el('div', 'fly' + (text ? ' token' : ''), text); f.style.background = color; document.body.appendChild(f);
+  const w = f.offsetWidth, h = f.offsetHeight;
+  const x0 = a.left + a.width / 2 - w / 2, y0 = a.top + a.height / 2 - h / 2, x1 = b.left + b.width / 2 - w / 2, y1 = b.top + b.height / 2 - h / 2;
+  const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 80;
+  const anim = f.animate([
+    { transform: `translate(${x0}px,${y0}px) scale(.6)`, opacity: 0 },
+    { transform: `translate(${mx}px,${my}px) scale(1.15)`, opacity: 1, offset: .5 },
+    { transform: `translate(${x1}px,${y1}px) scale(1)`, opacity: 1 }
+  ], { duration: 1100, easing: 'cubic-bezier(.4,0,.2,1)' });
+  return anim.finished.then(() => f.remove()).catch(() => f.remove());
+}
+
+/* ---------- XP, badges, missions ---------- */
+let shownXP = 0;
+const BASE = { 'm1-paint': 100, 'm1-num': 150, 'm1-eve': 100, 'm1-mitm': 100, 'm2-forge': 200, 'm2-msg': 150, 'm2-pit': 210, 'm3-sign': 200, 'm3-court': 150, 'm3-curve': 150, 'm3-quiz': 120 };
+const TASK_LABEL = { 'm1-paint': '1A', 'm1-num': '1B', 'm1-eve': '1C', 'm1-mitm': '1D', 'm2-forge': '2A', 'm2-msg': '2B', 'm2-pit': '2C', 'm3-sign': '3A', 'm3-court': '3B', 'm3-curve': '3C', 'm3-quiz': '3D' };
+const BADGES = {
+  m1: { icon: '🤝', name: 'Key Exchanger', desc: 'Agreed a secret in full view of the eavesdropper' },
+  m2: { icon: '🔐', name: 'RSA Forgemaster', desc: 'Forged and used a working RSA key pair' },
+  m3: { icon: '✍️', name: 'Signature Sentinel', desc: 'Signed, verified and caught a forgery' },
+  eagle: { icon: '🦅', name: 'Eagle Eye', desc: 'Spotted every RSA pitfall first time' },
+  curve: { icon: '🌀', name: 'Curve Rider', desc: 'Added points on an elliptic curve' },
+  boss: { icon: '🏆', name: 'Crypto Champion', desc: 'Defeated Eve-9000' }
+};
+const MISSIONS = {
+  m1: { tasks: ['m1-paint', 'm1-num', 'm1-eve', 'm1-mitm'], next: 'm2', nextLabel: 'Start Mission 2' },
+  m2: { tasks: ['m2-forge', 'm2-msg', 'm2-pit'], next: 'm3', nextLabel: 'Start Mission 3' },
+  m3: { tasks: ['m3-sign', 'm3-court', 'm3-curve', 'm3-quiz'], next: 'boss', nextLabel: 'Face the boss' }
+};
+function renderXP() {
+  const target = S.xp, start = shownXP, t0 = performance.now();
+  const step = t => { const k = Math.min(1, (t - t0) / 700); shownXP = Math.round(start + (target - start) * k); $('#xpNum').textContent = shownXP; if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  $('#xpFill').style.width = Math.min(100, S.xp / MAX_XP * 100) + '%';
+  $('#badgeRow').innerHTML = S.badges.map(b => `<span title="${BADGES[b].name}">${BADGES[b].icon}</span>`).join('');
+}
+function addXP(p, e) { if (!p) return; S.xp += p; renderXP(); floatXP(p, e); save(); }
+function markDone(id) { const t = document.getElementById('t-' + id); if (t) t.classList.add('done'); updateMissionProgress(); }
+function updateMissionProgress() {
+  for (const [m, d] of Object.entries(MISSIONS)) {
+    const n = d.tasks.filter(t => S.done[t]).length, e = $(`.m-prog[data-m="${m}"]`);
+    if (!e) continue; e.querySelector('.cnt').textContent = n; e.querySelector('.bar div').style.width = (n / d.tasks.length * 100) + '%';
+  }
+  renderOutcomes();
+}
+function giveBadge(k) { if (S.badges.includes(k)) return; S.badges.push(k); renderXP(); save(); toast(`${BADGES[k].icon} <b>Badge unlocked:</b> ${BADGES[k].name}`, 'gold'); }
+function checkMission() {
+  for (const [m, d] of Object.entries(MISSIONS)) {
+    if (d.tasks.every(t => S.done[t]) && !S.done[m + '-complete']) {
+      S.done[m + '-complete'] = true; giveBadge(m);
+      S.unlocked = Math.max(S.unlocked, ORDER.indexOf(d.next)); save(); renderStepper();
+      setTimeout(() => missionOverlay(m), 900);
+    }
+  }
+}
+function missionOverlay(m) {
+  const b = BADGES[m], n = S.team.members;
+  showOverlay(`<div class="ov-badge">${b.icon}</div><div class="ov-kicker mt-2">Mission ${m[1]} complete</div><h2 class="mt-1">${b.name}</h2><p class="muted">${b.desc}.</p>
+    <p class="fs-5">Brilliant teamwork, <b>${esc(n[0])}</b>, <b>${esc(n[1])}</b> and <b>${esc(n[2])}</b>. 🎉</p>
+    <div class="text-start lo-anim my-3 p-3 rounded-4" style="background:var(--surface2)"><b>🎓 Your team can now:</b>${OUTCOMES[m].map((o, i) => loItem(o, .4 + i * .15)).join('')}</div>
+    <p>Team total: <b>${S.xp} XP</b></p><button class="btn-q lg" data-go="${MISSIONS[m].next}">${MISSIONS[m].nextLabel}</button>`);
+  sfx.fanfare(); celebrate();
+}
+
+/* ---------- Learning outcomes ---------- */
+const OUTCOMES = {
+  m1: [
+    { t: 'Explain how public-key cryptography solves the key-distribution problem', task: 'm1-paint' },
+    { t: 'Describe each step of a Diffie–Hellman key exchange and why both sides get the same secret', task: 'm1-num' },
+    { t: 'Explain the discrete logarithm problem and why it keeps Diffie–Hellman secure', task: 'm1-eve' },
+    { t: 'Describe the man-in-the-middle attack on unauthenticated Diffie–Hellman and how authentication stops it', task: 'm1-mitm' }
+  ],
+  m2: [
+    { t: 'Describe how an RSA key pair is built: p, q, n, φ(n), e and d', task: 'm2-forge' },
+    { t: 'Say which key locks and which key unlocks an RSA message, and why', task: 'm2-msg' },
+    { t: 'Recognise common RSA pitfalls and their fixes: padding, key size and prime choice', task: 'm2-pit' }
+  ],
+  m3: [
+    { t: 'Explain how a digital signature is made and checked, and how it reveals tampering', task: 'm3-sign' },
+    { t: 'Distinguish a MAC from a digital signature, including non-repudiation', task: 'm3-court' },
+    { t: 'Show how points are added and doubled on an elliptic curve, and name the ECDLP', task: 'm3-curve' },
+    { t: 'Explain DSS, the danger of reusing k in ElGamal-type signatures, and why ECC uses smaller keys', task: 'm3-quiz' }
+  ]
+};
+const MISSION_TITLES = { m1: 'Diffie–Hellman', m2: 'RSA', m3: 'Signatures and ECC' };
+const loItem = (o, delay) => `<div class="lo ${S.done[o.task] ? 'ok' : ''}"${delay != null ? ` style="animation-delay:${delay}s"` : ''}><span class="tick">✓</span><span>${o.t}</span></div>`;
+function renderOutcomes() {
+  $$('.lo-box[data-lo]').forEach(b => {
+    const m = b.dataset.lo, list = OUTCOMES[m], n = list.filter(o => S.done[o.task]).length;
+    b.innerHTML = `<h6>🎯 By the end of this mission you will be able to: <span class="muted fw-normal small">${n} of ${list.length} ticked</span></h6>` + list.map(o => loItem(o)).join('');
+  });
+}
+
+/* ---------- Navigation ---------- */
+const STEPS = [['home', 'bi-house-door', 'Start'], ['team', 'bi-people', 'Team'], ['m1', 'bi-arrow-left-right', 'Diffie–Hellman'], ['m2', 'bi-key', 'RSA'], ['m3', 'bi-pen', 'Signatures'], ['boss', 'bi-lightning', 'Boss battle'], ['cert', 'bi-award', 'Certificate']];
+function renderStepper() {
+  $('#stepper').innerHTML = STEPS.map(([id, ic, l], i) => {
+    const locked = i > S.unlocked;
+    const complete = (id === 'team' && S.unlocked >= 2) || (MISSIONS[id] && S.done[id + '-complete']) || (id === 'boss' && S.boss);
+    const icon = locked ? '<i class="bi bi-lock-fill"></i>' : complete ? '<i class="bi bi-check-circle-fill chk"></i>' : `<i class="bi ${ic}"></i>`;
+    return `<button class="step ${S.screen === id ? 'active' : ''} ${locked ? 'locked' : 'unlocked'} ${complete ? 'complete' : ''}" data-go="${id}">${icon} ${l}</button>`;
+  }).join('');
+}
+function go(id) {
+  const i = ORDER.indexOf(id); if (i < 0) return;
+  if (i > S.unlocked) { toast('🔒 Finish the earlier steps first', 'bad'); sfx.bad(); return; }
+  if (B && B.timer && id !== 'boss') { clearInterval(B.timer); B = null; }
+  hideOverlay();
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + id));
+  S.screen = id; save(); renderStepper();
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  if (id === 'm3') requestAnimationFrame(() => curveDraw());
+  if (id === 'boss') renderBoss();
+  if (id === 'cert') renderCert();
+}
+
+/* ---------- Team and roles ---------- */
+const EMBLEMS = ['🛡️', '🦅', '🐆', '🦉', '⚡', '🚀', '🧠', '🌙', '🏏', '👾'];
+const NAMES = { alice: 'Sender', bob: 'Receiver', eve: 'Eavesdropper' };
+const AV = { alice: '👩‍💻', bob: '👨‍💻', eve: '🕵️', team: '👥' };
+const ROLE_DESC = { alice: 'Picks secrets, sends and signs messages. Textbooks call this person Alice.', bob: 'Receives, unlocks and checks messages. Textbooks call this person Bob.', eve: 'Watches the wire, checks the maths and plays the attacker. Textbooks call this person Eve.' };
+function nameOf(m, role) { const i = S.roles[m] ? S.roles[m][role] : null; return (i != null && S.team.members[i]) || NAMES[role]; }
+function refreshWho() { $$('.wn').forEach(e => e.textContent = nameOf(e.dataset.m, e.dataset.role)); }
+function renderAssign(m) {
+  const r = S.roles[m];
+  $$(`.assign[data-m="${m}"]`).forEach(box => box.innerHTML = `<div class="d-flex align-items-center gap-2 flex-wrap mb-2"><h5 class="m-0">🎭 Choose your roles for Mission ${m[1]}</h5><span class="small muted">Decide together who does what, then tap a name under each role. Each person gets one role; you can change it any time.</span></div>
+    <div class="assign-grid">${['alice', 'bob', 'eve'].map(role => `<div class="arole ${role}"><div class="d-flex align-items-center gap-2"><span class="fs-3">${AV[role]}</span><div><b>${NAMES[role]}</b><small class="d-block muted">${ROLE_DESC[role]}</small></div></div>
+      <div class="chips mt-2">${S.team.members.map((n, i) => `<button class="chip ${r[role] === i ? 'sel' : ''}" data-assign="${m}|${role}|${i}">${esc(n || 'Member ' + (i + 1))}</button>`).join('')}</div></div>`).join('')}</div>`);
+}
+function setRole(m, role, idx) {
+  const cur = S.roles[m], other = Object.keys(cur).find(k => cur[k] === idx);
+  if (other && other !== role) cur[other] = cur[role];
+  cur[role] = idx; save(); renderAssign(m); refreshWho(); sfx.click();
+  toast(`${AV[role]} <b>${esc(S.team.members[idx] || 'Member ' + (idx + 1))}</b> is now the ${NAMES[role]}`);
+}
+function renderTeamPill() { const p = $('#teamPill'); if (S.team.name) { p.style.display = ''; p.textContent = `${S.team.emblem} ${S.team.name}`; } else p.style.display = 'none'; }
+function teamInit() {
+  $('#emblems').innerHTML = EMBLEMS.map(e => `<button class="emb ${e === S.team.emblem ? 'sel' : ''}" data-e="${e}" aria-label="Emblem ${e}">${e}</button>`).join('');
+  $$('#emblems .emb').forEach(b => b.onclick = () => { S.team.emblem = b.dataset.e; $$('#emblems .emb').forEach(x => x.classList.toggle('sel', x === b)); sfx.click(); });
+  $('#teamName').value = S.team.name; S.team.members.forEach((m, i) => $('#mem' + i).value = m);
+  $('#lockTeam').onclick = lockTeam; renderTeamPill();
+}
+function lockTeam() {
+  const name = $('#teamName').value.trim(), mem = [0, 1, 2].map(i => $('#mem' + i).value.trim());
+  let ok = true;
+  const mark = (e, good) => { e.classList.remove('ok', 'bad'); e.classList.add(good ? 'ok' : 'bad'); if (!good) shake(e); };
+  if (!name) { mark($('#teamName'), false); ok = false; }
+  mem.forEach((m, i) => { if (!m) { mark($('#mem' + i), false); ok = false; } });
+  if (!ok) { toast('Add a team name and all three member names', 'bad'); sfx.bad(); return; }
+  S.team.name = name; S.team.members = mem; S.unlocked = Math.max(S.unlocked, 2);
+  const r = S.roles.m1;   // later missions rotate, so everyone tries every role
+  S.roles.m2 = { alice: r.eve, bob: r.alice, eve: r.bob }; S.roles.m3 = { alice: r.bob, bob: r.eve, eve: r.alice }; save();
+  ['m1', 'm2', 'm3'].forEach(renderAssign); refreshWho(); renderTeamPill(); sfx.fanfare(); celebrate();
+  toast(`${S.team.emblem} <b>${esc(name)}</b> is ready. ${esc(nameOf('m1', 'alice'))} is the Sender, ${esc(nameOf('m1', 'bob'))} the Receiver, ${esc(nameOf('m1', 'eve'))} the Eavesdropper.`, 'gold');
+  setTimeout(() => go('m1'), 900);
+}
+
+const NAME_RE = /\b(Ayesha|Bilal|Ehsan|Mansoor)\b/g;
+const ROLE_OF = { Ayesha: 'alice', Bilal: 'bob', Ehsan: 'eve', Mansoor: 'eve' };
+function personalize(root, m) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+  while (w.nextNode()) { NAME_RE.lastIndex = 0; if (NAME_RE.test(w.currentNode.nodeValue)) nodes.push(w.currentNode); }
+  nodes.forEach(n => {
+    if (n.parentNode && n.parentNode.classList && n.parentNode.classList.contains('wn')) return;
+    const s = n.nodeValue, frag = document.createDocumentFragment(); let last = 0;
+    s.replace(NAME_RE, (mt, _g, off) => {
+      frag.append(s.slice(last, off));
+      const r = ROLE_OF[mt], b = document.createElement('b'); b.className = 'wn c-' + r; b.dataset.m = m; b.dataset.role = r; b.textContent = nameOf(m, r);
+      frag.append(b); last = off + mt.length; return mt;
+    });
+    frag.append(s.slice(last)); n.replaceWith(frag);
+  });
+}
+
+/* =========================================================
+   GUIDED COACH ENGINE
+   Step types: info · pick · choose · calc · action · custom
+   ========================================================= */
+const GUIDES = {};
+function defineGuide(id, m, make, opts = {}) { GUIDES[id] = { id, m, make, opts, state: 'idle' }; }
+function whoHTML(m, who, as) {
+  if (who === 'team') return `<div class="who team"><span class="av">👥</span><div><small>Whole team</small><b>Discuss and decide together</b></div></div>`;
+  return `<div class="who ${who}"><span class="av">${AV[who]}</span><div><small>Your turn 👉</small><b class="wn" data-m="${m}" data-role="${who}">${esc(nameOf(m, who))}</b> <span class="muted">the ${as || NAMES[who]}</span></div></div>`;
+}
+function startGuide(id) {
+  const g = GUIDES[id]; g.state = 'running'; g.ctx = {}; g.i = 0; g.mistakes = 0;
+  if (g.opts.reset) g.opts.reset(g.ctx);
+  g.list = g.make(g.ctx); renderStep(g);
+  const box = $('#g-' + id); if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function renderStep(g) {
+  const box = $('#g-' + g.id), st = g.list[g.i], N = g.list.length, who = st.who || 'team', ctx = g.ctx;
+  box.innerHTML = `<div class="coach-top">${whoHTML(g.m, who, st.as)}<div class="coach-prog"><small>Step ${g.i + 1} of ${N}</small><div class="dots">${g.list.map((_, k) => `<i class="${k < g.i ? 'd' : k === g.i ? 'c' : ''}"></i>`).join('')}</div></div></div>
+    <div class="coach-body">${st.title ? `<h5 class="coach-title">${val(st.title, ctx)}</h5>` : ''}<div class="coach-text">${val(st.text, ctx) || ''}</div><div class="coach-area"></div><div class="coach-fb"></div></div>`;
+  const area = $('.coach-area', box), fb = $('.coach-fb', box);
+  const next = () => { g.i++; if (g.i >= N) guideDone(g); else renderStep(g); };
+  const showNext = (html, label) => {
+    if (html) { fb.insertAdjacentHTML('beforeend', `<div class="fb good">${html}</div>`); personalize(fb, g.m); }
+    const b = el('button', 'btn-q mt-2', `${label || (g.i === N - 1 ? 'Finish task' : 'Next step')} <i class="bi bi-arrow-right-short"></i>`);
+    b.onclick = () => { sfx.click(); next(); }; fb.appendChild(b);
+  };
+  const bad = html => { fb.innerHTML = `<div class="fb bad">${html}</div>`; personalize(fb, g.m); };
+  const addHint = () => {
+    if (!st.hint) return;
+    const hb = el('button', 'qhint', '💡 Need a hint?');
+    hb.onclick = () => { const t = el('div', 'qhint-t', '💡 ' + val(st.hint, ctx)); hb.replaceWith(t); personalize(t, g.m); };
+    area.appendChild(hb);
+  };
+  if (st.enter) st.enter(ctx, area);
+  if (st.html) area.insertAdjacentHTML('beforeend', val(st.html, ctx));
+  switch (st.type) {
+    case 'info': showNext(null, st.btn || 'Got it'); break;
+    case 'pick': {
+      const wrap = el('div', st.wrapClass || 'chips');
+      val(st.options, ctx).forEach(o => {
+        const b = el('button', st.btnClass || 'chip big', o.h);
+        b.onclick = () => {
+          const err = st.validate ? st.validate(o.v, ctx) : null;
+          if (err) { b.classList.add('nope'); b.disabled = true; shake(b); sfx.bad(); bad(err); return; }
+          [...wrap.children].forEach(x => x.disabled = true); b.classList.add('sel'); sfx.click();
+          st.onPick(o.v, ctx);
+          if (st.secret) wrap.replaceWith(el('div', 'secret-locked', `🔒 Secret locked in. Only ${esc(nameOf(g.m, who))} knows it. Everyone can look again.`));
+          fb.innerHTML = ''; showNext(val(st.after, ctx));
+        };
+        wrap.appendChild(b);
+      });
+      area.appendChild(wrap); addHint(); break;
+    }
+    case 'choose': {
+      const opts = st.noShuffle ? val(st.options, ctx) : shuffle(val(st.options, ctx));
+      const wrap = el('div', 'qz-opts'); let solved = false;
+      opts.forEach(o => {
+        const b = el('button', 'opt', o.h);
+        b.onclick = async () => {
+          if (solved) return;
+          if (o.ok) {
+            solved = true; b.classList.add('right'); [...wrap.children].forEach(x => x.disabled = true); sfx.good(); fb.innerHTML = '';
+            if (st.onCorrect) await st.onCorrect(ctx);
+            showNext('✅ ' + val(st.explain, ctx));
+          } else { g.mistakes++; b.classList.add('wrong'); b.disabled = true; shake(b); sfx.bad(); bad('Not quite. ' + (o.why || 'Talk it through and try another answer.')); }
+        };
+        wrap.appendChild(b);
+      });
+      area.appendChild(wrap); addHint(); break;
+    }
+    case 'calc': {
+      const ans = st.answer(ctx), choices = makeChoices(ans, st.range ? st.range(ctx) : 50, st.near ? st.near(ctx) : []);
+      area.insertAdjacentHTML('beforeend', `<div class="formula-live">${val(st.formula, ctx)} = <b class="qmark">?</b></div><p class="small muted mt-2 mb-1">Which answer is right? Not sure? Tap <b>Show me how</b> first: it does the working for you.</p>`);
+      const how = el('button', 'btn-g', '🔍 Show me how'), wk = el('div', 'working'); wk.hidden = true;
+      how.onclick = () => { wk.innerHTML = st.working(ctx); wk.hidden = false; how.remove(); sfx.click(); };
+      area.appendChild(how); area.appendChild(wk);
+      const wrap = el('div', 'chips mt-2'); let solved = false;
+      choices.forEach(c => {
+        const b = el('button', 'chip big', String(c));
+        b.onclick = () => {
+          if (solved) return;
+          if (c === ans) {
+            solved = true; b.classList.add('sel'); [...wrap.children].forEach(x => x.disabled = true);
+            const q = $('.qmark', area); q.textContent = ans; q.classList.add('ok'); sfx.good(); fb.innerHTML = '';
+            if (st.onCorrect) st.onCorrect(ctx, ans); showNext(val(st.explain, ctx));
+          } else { g.mistakes++; b.classList.add('nope'); b.disabled = true; shake(b); sfx.bad(); bad(`Not ${c}. Tap <b>Show me how</b> to see the working.`); }
+        };
+        wrap.appendChild(b);
+      });
+      area.appendChild(wrap); break;
+    }
+    case 'action': {
+      const b = el('button', 'btn-q lg', val(st.btn, ctx));
+      b.onclick = async () => { b.disabled = true; sfx.click(); await st.run(ctx, area); b.remove(); showNext(val(st.explain, ctx)); };
+      area.appendChild(b); break;
+    }
+    case 'custom': st.render(area, ctx, html => { fb.innerHTML = ''; showNext(html); }, g, bad); break;
+  }
+  personalize($('.coach-body', box), g.m);
+}
+function powCalc(o) {
+  return { type: 'calc', who: o.who, title: o.title, text: o.text, formula: c => { const [b, e, m] = o.pow(c); return `${o.label} = ${b}<sup>${e}</sup> mod ${m}`; },
+    answer: c => { const [b, e, m] = o.pow(c); return modpow(b, e, m); }, range: c => o.pow(c)[2],
+    near: c => { const [b, e, m] = o.pow(c); return [(b * e) % m, modpow(b, e + 1, m)]; },
+    working: c => { const [b, e, m] = o.pow(c); return powWorking(b, e, m); }, onCorrect: o.onCorrect, explain: o.explain };
+}
+function guideDone(g) {
+  const box = $('#g-' + g.id), replay = !!S.done[g.id];
+  const pts = replay ? 0 : Math.round(BASE[g.id] * Math.max(.5, 1 - .1 * g.mistakes));
+  const tasks = MISSIONS[g.m].tasks, nxt = tasks[tasks.indexOf(g.id) + 1];
+  box.innerHTML = `<div class="coach-done"><div class="burst">🎉</div><h4 class="mt-1">Task ${TASK_LABEL[g.id]} complete!</h4>
+    <p>${replay ? 'Nice replay. Repetition builds understanding.' : `+${pts} XP for team <b>${esc(S.team.name)}</b>${g.mistakes ? `. ${g.mistakes} wrong tr${g.mistakes > 1 ? 'ies' : 'y'} along the way, and that's how you learn.` : ', with no mistakes!'}`}</p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">${nxt ? `<button class="btn-q" data-jump="${nxt}">Go to task ${TASK_LABEL[nxt]} <i class="bi bi-arrow-down-short"></i></button>` : ''}<button class="btn-g" data-replay="${g.id}">↻ Replay this task</button></div></div>`;
+  g.state = 'done';
+  if (!replay) {
+    S.done[g.id] = true; addXP(pts, box); sfx.good(); markDone(g.id);
+    if (g.opts.onDone) g.opts.onDone(g);
+    save(); refreshPanels(); checkMission();
+  }
+}
+function refreshPanels() {
+  Object.values(GUIDES).forEach(g => {
+    if (g.state === 'running' || g.state === 'done') return;
+    const box = $('#g-' + g.id), tasks = MISSIONS[g.m].tasks, prev = tasks[tasks.indexOf(g.id) - 1];
+    if (S.done[g.id]) { box.innerHTML = `<div class="coach-done"><h5>✅ Task ${TASK_LABEL[g.id]} complete</h5><button class="btn-g" data-replay="${g.id}">↻ Replay this task</button></div>`; return; }
+    if (prev && !S.done[prev]) { box.innerHTML = `<div class="coach-lock">🔒 Finish task ${TASK_LABEL[prev]} first, then this one opens.</div>`; return; }
+    box.innerHTML = `<div class="coach-start"><p class="mb-2">${g.opts.intro || 'Ready when you are.'}</p><button class="btn-q lg" data-start="${g.id}"><i class="bi bi-play-fill"></i> Start task ${TASK_LABEL[g.id]}</button></div>`;
+  });
+}
+
+/* =========================================================
+   MISSION 1
+   ========================================================= */
+const PAINT = { common: '#f2c94c', a: ['#e63946', '#7b2cbf', '#2a9d8f', '#1d3557'], b: ['#f77f00', '#06d6a0', '#3a86ff', '#ff006e'] };
+const hexToRgb = h => { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+const rgbToHex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+const mix = (...hs) => { const cs = hs.map(hexToRgb); return rgbToHex([0, 1, 2].map(i => cs.reduce((s, c) => s + c[i], 0) / cs.length)); };
+function fillBlob(e, c, label) { e.style.background = c; e.innerHTML = label || ''; e.classList.remove('filled'); void e.offsetWidth; e.classList.add('filled'); }
+function lockBlob(e) { e.style.background = 'var(--surface2)'; e.innerHTML = '<span style="display:grid;place-items:center;height:100%">🔒</span>'; e.classList.add('filled'); }
+
+defineGuide('m1-paint', 'm1', () => [
+  { type: 'info', title: 'The idea', text: 'Ayesha and Bilal want to end up with the <b>same secret colour</b>, but everything they send passes Ehsan, who copies it. Their trick: mixing paint is easy, but un-mixing it is impossible. The <b>public yellow</b> in the middle is something everyone, even Ehsan, can see.' },
+  { type: 'pick', who: 'alice', text: 'Pick your <b>secret colour</b>. Bilal and Ehsan, look away! 🙈', btnClass: 'chip sw', options: PAINT.a.map(c => ({ h: `<span class="swatch-in" style="background:${c}"></span>`, v: c })), secret: true,
+    onPick: (v, c) => { c.a = v; lockBlob($('#pa-sec')); }, after: 'Locked. This colour never leaves Ayesha.' },
+  { type: 'pick', who: 'bob', text: 'Your turn: pick <b>your</b> secret colour. Ayesha and Ehsan, look away! 🙈', btnClass: 'chip sw', options: PAINT.b.map(c => ({ h: `<span class="swatch-in" style="background:${c}"></span>`, v: c })), secret: true,
+    onPick: (v, c) => { c.b = v; lockBlob($('#pb-sec')); }, after: 'Locked. This colour never leaves Bilal.' },
+  { type: 'action', text: 'Each of them mixes their secret colour with the public yellow, then sends the <b>mix</b> across the open wire. Press the button and watch Ehsan\'s box.', btn: '🎨 Mix and send',
+    run: async c => {
+      c.ma = mix(PAINT.common, c.a); c.mb = mix(PAINT.common, c.b);
+      fillBlob($('#pa-mix'), c.ma); fillBlob($('#pb-mix'), c.mb); await sleep(600); sfx.whoosh();
+      await Promise.all([fly($('#pa-mix'), $('#pb-recv'), { color: c.ma }), fly($('#pb-mix'), $('#pa-recv'), { color: c.mb })]);
+      fillBlob($('#pb-recv'), c.ma); fillBlob($('#pa-recv'), c.mb);
+      $('#eve-items').innerHTML = [PAINT.common, c.ma, c.mb].map((x, i) => `<span class="mini" style="background:${x};animation-delay:${i * 120}ms"></span>`).join('');
+    }, explain: 'Both mixes crossed the wire, and Ehsan copied them.' },
+  { type: 'choose', who: 'eve', text: 'Look at your box. What did you manage to capture?', options: [
+      { h: 'The public yellow and both mixes', ok: true },
+      { h: 'Ayesha\'s and Bilal\'s secret colours', why: 'The secret colours never left their owners. Only the mixes crossed the wire.' },
+      { h: 'The final shared colour', why: 'That hasn\'t even been made yet!' }],
+    explain: 'Right: Ehsan has the yellow and the two mixes, but no secret colour on its own.' },
+  { type: 'action', text: 'Now Ayesha adds <b>their own</b> secret colour to the mix received from Bilal, and Bilal adds <b>their own</b> secret colour to Ayesha\'s mix.', btn: '🧪 Add the secret colours',
+    run: async c => { const fin = mix(PAINT.common, c.a, c.b); fillBlob($('#pa-final'), fin); fillBlob($('#pb-final'), fin); $('#pa-final').classList.add('reveal'); $('#pb-final').classList.add('reveal'); sfx.good(); await sleep(700); },
+    explain: 'They both made <b>exactly the same colour</b>: yellow + Ayesha\'s secret + Bilal\'s secret. That colour never travelled over the wire.' },
+  { type: 'choose', text: 'Ehsan holds the yellow, Ayesha\'s mix and Bilal\'s mix. Why can\'t Ehsan make the shared colour?', options: [
+      { h: 'Ehsan would have to separate a secret colour back out of a mix, and un-mixing is practically impossible', ok: true },
+      { h: 'Ehsan doesn\'t know the public yellow', why: 'Everyone sees the yellow; it\'s public.' },
+      { h: 'Ehsan can: mixing the two mixes gives the same colour', why: 'Mixing the two mixes gives too much yellow, so it\'s the wrong shade.' }],
+    hint: 'With paint, which direction is easy and which is hard: mixing, or separating?',
+    explain: 'Exactly. In the real maths: yellow = the public g, a secret colour = a secret number, a mix = g<sup>a</sup> mod p, and un-mixing = the <b>discrete logarithm problem</b>.' }
+], { intro: 'Seven short steps. Decide together; the coach tells you whose turn it is.',
+  reset: () => { ['pa-sec', 'pa-mix', 'pa-recv', 'pa-final', 'pb-sec', 'pb-mix', 'pb-recv', 'pb-final'].forEach(id => { const e = $('#' + id); e.style.background = ''; e.innerHTML = ''; e.classList.remove('filled', 'reveal'); }); $('#eve-items').innerHTML = '<span class="small muted">Nothing yet</span>'; } });
+
+defineGuide('m1-num', 'm1', () => [
+  { type: 'info', title: 'What does “mod” mean?', text: '<b>x mod 23</b> is the <b>remainder</b> after dividing x by 23. Think of a clock with 23 hours: you keep going round, so numbers never get big.',
+    html: '<div class="worked">25 mod 23 = 2 &nbsp; (because 25 = 23 + <b>2</b>)<br>50 mod 23 = 4 &nbsp; (because 50 = 46 + <b>4</b>)</div>' },
+  { type: 'info', title: 'The plan', text: 'Everyone, including Ehsan, knows the public numbers <b>p = 23</b> and <b>g = 5</b>. Ayesha and Bilal will each: ① pick a secret number, ② make a public value from it, ③ swap public values, ④ combine. They\'ll end up with the same secret. Watch the boxes above fill up.' },
+  { type: 'pick', who: 'alice', text: 'Pick your secret number <b>a</b>. Bilal and Ehsan, look away! 🙈', options: [3, 4, 6, 7, 9].map(v => ({ h: String(v), v })), secret: true,
+    onPick: (v, c) => { c.a = v; setv('n-a', '🔒'); }, after: 'Secret a is locked.' },
+  { type: 'pick', who: 'bob', text: 'Pick your secret number <b>b</b>. Ayesha and Ehsan, look away! 🙈', options: [2, 5, 8, 10, 11].map(v => ({ h: String(v), v })), secret: true,
+    onPick: (v, c) => { c.b = v; setv('n-b', '🔒'); }, after: 'Secret b is locked.' },
+  powCalc({ who: 'alice', title: 'Make your public value A', text: 'Raise g = 5 to your secret a, then take the remainder mod 23. This hides a inside A.', label: 'A', pow: c => [5, c.a, 23],
+    onCorrect: (c, v) => { c.A = v; setv('n-A', v); }, explain: c => `A = ${c.A}. It's safe to send: it doesn't show a.` }),
+  powCalc({ who: 'bob', title: 'Make your public value B', text: 'Same recipe with your secret b.', label: 'B', pow: c => [5, c.b, 23],
+    onCorrect: (c, v) => { c.B = v; setv('n-B', v); }, explain: c => `B = ${c.B}. Also safe to send.` }),
+  { type: 'action', text: 'Ayesha and Bilal swap A and B over the open wire.', btn: '📡 Send A and B',
+    run: async c => { sfx.whoosh(); await Promise.all([fly($('#n-A'), $('#n-rA'), { color: 'var(--alice)', text: 'A = ' + c.A }), fly($('#n-B'), $('#n-rB'), { color: 'var(--bob)', text: 'B = ' + c.B })]); setv('n-rA', c.A); setv('n-rB', c.B); setv('n-eve', `p = 23, g = 5, A = ${c.A}, B = ${c.B}`); },
+    explain: 'Ehsan wrote down everything that crossed the wire: p, g, A and B.' },
+  { type: 'choose', who: 'eve', text: 'Look at your notebook. Can you see Ayesha\'s secret a?', options: [
+      { h: 'No. Only A = 5<sup>a</sup> mod 23 travelled, and a is hidden inside it', ok: true },
+      { h: 'Yes, a is the same as A', why: 'A is 5<sup>a</sup> mod 23, a scrambled version of a, not a itself.' },
+      { h: 'Yes, a is p', why: 'p = 23 is public and the same for everyone.' }],
+    explain: 'Right. Getting a back out of A is the <b>discrete logarithm problem</b>. You\'ll try it in task 1C.' },
+  powCalc({ who: 'alice', title: 'Combine', text: 'Take what you <b>received</b> (B) and raise it to <b>your own</b> secret a.', label: 's', pow: c => [c.B, c.a, 23],
+    onCorrect: (c, v) => { c.sA = v; setv('n-sA', v); }, explain: c => `Ayesha's shared secret is ${c.sA}.` }),
+  powCalc({ who: 'bob', title: 'Combine', text: 'Take what you <b>received</b> (A) and raise it to <b>your own</b> secret b.', label: 's', pow: c => [c.A, c.b, 23],
+    onCorrect: (c, v) => { c.sB = v; setv('n-sB', v); sfx.fanfare(); }, explain: c => `Bilal's shared secret is ${c.sB}: <b>the same as Ayesha's!</b> 🎉` }),
+  { type: 'info', title: 'Why do they match?', text: 'Both did the same thing in a different order:',
+    html: c => `<div class="worked">Ayesha: B<sup>a</sup> = (5<sup>b</sup>)<sup>a</sup> = 5<sup>b×a</sup><br>Bilal:&nbsp; A<sup>b</sup> = (5<sup>a</sup>)<sup>b</sup> = 5<sup>a×b</sup><br>both → 5<sup>${c.a}×${c.b}</sup> mod 23 = <b>${c.sA}</b></div><p class="mt-2 mb-0">Ehsan never saw a or b, so Ehsan can't do either calculation.</p>`, btn: 'Understood' }
+], { intro: 'The paint idea again, with real numbers. The coach shows the working whenever you need it.',
+  reset: () => { ['n-a', 'n-A', 'n-rB', 'n-sA', 'n-b', 'n-B', 'n-rA', 'n-sB'].forEach(id => setv(id, '?')); setv('n-eve', 'p = 23, g = 5'); } });
+
+function eveTilesInit() {
+  const A = modpow(5, S.eveX, 23); $('#eve-A').textContent = A; $('#eve-A2').textContent = A; $('#eve-tries').textContent = 0;
+  $('#eve-tiles').innerHTML = Array.from({ length: 22 }, (_, i) => `<button class="tile" data-x="${i + 1}" disabled aria-label="Try x = ${i + 1}"><div class="tile-in"><div class="tile-f">x=${i + 1}</div><div class="tile-b">5<sup>${i + 1}</sup> mod 23<br><b>${modpow(5, i + 1, 23)}</b></div></div></button>`).join('');
+}
+defineGuide('m1-eve', 'm1', () => [
+  { type: 'info', who: 'eve', title: 'Your mission, Ehsan', text: () => `You know p = 23, g = 5 and Ayesha's public value A = <b>${modpow(5, S.eveX, 23)}</b>. To find the secret, you have to guess: is it 5¹? 5²? 5³? … Each tile above is one guess.` },
+  { type: 'custom', who: 'eve', text: () => `Tap the tiles <b>in order</b>, starting at x = 1. Stop when a tile shows <b>${modpow(5, S.eveX, 23)}</b>. Teammates: keep count!`,
+    render: (area, c, done) => {
+      const A = modpow(5, S.eveX, 23); let tries = 0, won = false;
+      $$('#eve-tiles .tile').forEach(t => {
+        t.disabled = false;
+        t.onclick = () => {
+          if (won || t.classList.contains('flipped')) return;
+          t.classList.add('flipped'); tries++; $('#eve-tries').textContent = tries; sfx.click();
+          if (modpow(5, +t.dataset.x, 23) === A) { won = true; t.classList.add('hit'); c.x = +t.dataset.x; c.tries = tries; sfx.good(); setTimeout(() => done(`🎯 Cracked! Ayesha's secret is <b>a = ${c.x}</b>, found after ${tries} guess${tries > 1 ? 'es' : ''}.`), 500); }
+        };
+      });
+    } },
+  { type: 'info', title: 'Now scale it up', text: 'With p = 23 there are only 22 tiles. Real Diffie–Hellman uses a prime with 2048 binary digits:',
+    html: `<div class="scale-grid"><div><small>possible tiles</small><b class="mono">≈ 10<sup>616</sup></b></div><div><small>years at a trillion guesses a second</small><b class="mono">over 10<sup>596</sup></b></div><div><small>age of the universe</small><b class="mono">≈ 1.4 × 10<sup>10</sup> years</b></div></div><p class="small muted mt-2 mb-0">Easy forwards, hopeless backwards: that's a <b>one-way function</b>.</p>` },
+  { type: 'choose', text: 'So why is real Diffie–Hellman safe, even though Ehsan sees A?', options: [
+      { h: 'The real prime is enormous, so there are far too many tiles to try', ok: true },
+      { h: 'The tiles are kept secret', why: 'Anyone can compute the tiles; the method is public.' },
+      { h: 'Ehsan isn\'t allowed to guess', why: 'Attackers don\'t follow rules! Security has to come from the maths.' }],
+    explain: 'Yes. Security comes from the <b>size</b> of the problem, not from hiding the method.' }
+], { intro: 'Swap sides: now you are the attacker.', reset: eveTilesInit });
+
+defineGuide('m1-mitm', 'm1', () => [
+  { type: 'info', who: 'eve', as: 'Attacker', title: 'You are now Mansoor', text: 'Mansoor is an <b>active</b> attacker. Mansoor sits between Ayesha and Bilal and can <b>replace</b> messages, not just copy them.' },
+  { type: 'action', text: 'Watch the attack. Follow each packet carefully.', btn: '▶ Play the attack',
+    run: async () => {
+      const A = $('#mm-a'), M = $('#mm-m'), Bn = $('#mm-b'); M.classList.remove('evil'); sfx.whoosh();
+      await fly(A, M, { color: 'var(--alice)', text: 'A' }); M.classList.add('evil');
+      await fly(M, Bn, { color: 'var(--eve)', text: 'M₁ (pretending to be A)' });
+      await fly(Bn, M, { color: 'var(--bob)', text: 'B' });
+      await fly(M, A, { color: 'var(--eve)', text: 'M₂ (pretending to be B)' });
+    }, explain: 'Ayesha thinks they share a key with Bilal, but really shares key k₁ with Mansoor. Bilal shares k₂ with Mansoor. Mansoor reads everything, re-locks it and passes it on. Nobody notices.' },
+  { type: 'choose', text: 'Why does the attack work?', options: [
+      { h: 'Nothing proves who sent A or B. The values aren\'t authenticated', ok: true },
+      { h: 'Mansoor solved the discrete log problem', why: 'No hard maths was done. Look at what Mansoor sent on.' },
+      { h: 'p = 23 is too small', why: 'A huge p wouldn\'t help: Mansoor never breaks anything, just swaps values.' }],
+    hint: 'When Bilal receives a value, what does Bilal have that proves it came from Ayesha?',
+    explain: 'Right. Plain Diffie–Hellman has no way to check where a public value came from.' },
+  { type: 'choose', text: 'What actually stops Mansoor?', options: [
+      { h: 'Ayesha and Bilal <b>sign</b> their values, and check them with trusted public keys (certificates)', ok: true },
+      { h: 'Use a bigger prime p', why: 'Size doesn\'t matter here; nothing is being broken.' },
+      { h: 'Send A and B twice', why: 'Mansoor can swap both copies.' }],
+    explain: 'Yes. A swapped value would fail the signature check. That\'s Mission 3, and it\'s how HTTPS (TLS 1.3) protects its key exchange.' }
+], { intro: 'The Ehsan player becomes Mansoor for this task.', reset: () => $('#mm-m').classList.remove('evil') });
+
+/* =========================================================
+   MISSION 2
+   ========================================================= */
+const PRIME_TILES = [7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27];
+function rs(id, v) { const e = $('#rs-' + id); e.querySelector('b').innerHTML = v; e.classList.toggle('set', v !== '?'); e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); }
+function primeCheck(v, c, other) {
+  if (!isPrime(v)) { const f = smallestFactor(v); return `${v} = ${f} × ${v / f}, so it is <b>not prime</b>. Try another tile.`; }
+  if (other && v === other) return 'p and q must be <b>different</b> primes. Pick another.';
+  return null;
+}
+function showKeys() {
+  const r = S.rsa; $('#f-keys').hidden = false;
+  $('#f-keys').innerHTML = `<div class="keycard pub"><div class="big">🔓</div><small>Public key: share it with the world</small><div><code>(e, n) = (${r.e}, ${r.n})</code></div></div>
+    <div class="keycard priv"><div class="big">🗝️</div><small>Private key: never leaves its owner</small><div><code>(d, n) = (${r.d}, ${r.n})</code></div><small class="d-block mt-1">Destroy p = ${r.p}, q = ${r.q} and φ = ${r.phi} too.</small></div>`;
+  $$('.k-pub').forEach(e => e.textContent = `(${r.e}, ${r.n})`); $$('.k-d').forEach(e => e.textContent = r.d);
+}
+defineGuide('m2-forge', 'm2', () => [
+  { type: 'info', title: 'The recipe', text: 'Bilal needs a key pair. You make the decisions, the coach does the arithmetic. Watch the recipe card above fill up.',
+    html: '<div class="worked">① pick two primes p and q<br>② n = p × q<br>③ φ(n) = (p − 1) × (q − 1)<br>④ choose e (shares no factor with φ)<br>⑤ find d (e × d leaves remainder 1 ÷ φ)</div>' },
+  { type: 'pick', who: 'bob', title: 'Pick prime p', text: 'A prime can only be divided by 1 and itself. Careful: some tiles only <i>look</i> prime.', options: PRIME_TILES.map(v => ({ h: String(v), v })),
+    hint: 'Try dividing by 3 and 5. For example 21 = 3 × 7 and 25 = 5 × 5, so neither is prime.',
+    validate: (v, c) => primeCheck(v, c), onPick: (v, c) => { c.p = v; rs('p', v); }, after: c => `p = ${c.p} ✓ It's prime.` },
+  { type: 'pick', who: 'bob', title: 'Pick prime q', text: 'Now a second, <b>different</b> prime.', options: PRIME_TILES.map(v => ({ h: String(v), v })),
+    validate: (v, c) => primeCheck(v, c, c.p), onPick: (v, c) => { c.q = v; rs('q', v); }, after: c => `q = ${c.q} ✓` },
+  { type: 'calc', title: 'Make the modulus n', text: 'Multiply the two primes. n goes into both keys and is public.', formula: c => `n = ${c.p} × ${c.q}`, answer: c => c.p * c.q,
+    range: c => c.p * c.q + 40, near: c => [c.p + c.q, (c.p - 1) * (c.q - 1), c.p * c.q + c.p], working: c => `<div class="worked">${c.p} × ${c.q} = <b>${c.p * c.q}</b></div>`,
+    onCorrect: (c, v) => { c.n = v; rs('n', v); }, explain: 'n is public. For real RSA it has about 617 decimal digits.' },
+  { type: 'calc', title: 'Make φ(n)', text: 'Subtract 1 from each prime, then multiply. This stays <b>secret</b>.', formula: c => `φ(n) = (${c.p} − 1) × (${c.q} − 1)`, answer: c => (c.p - 1) * (c.q - 1),
+    range: c => c.n, near: c => [c.n, (c.p + 1) * (c.q + 1), c.n - 1], working: c => `<div class="worked">${c.p} − 1 = ${c.p - 1}<br>${c.q} − 1 = ${c.q - 1}<br>${c.p - 1} × ${c.q - 1} = <b>${(c.p - 1) * (c.q - 1)}</b></div>`,
+    onCorrect: (c, v) => { c.phi = v; rs('phi', v); }, explain: 'Only someone who knows p and q can compute φ(n). That\'s why factoring n would break RSA.' },
+  { type: 'pick', who: 'bob', title: 'Choose the public exponent e', text: c => `e must share <b>no common factor</b> with φ(n) = ${c.phi}. Pick one; the coach will check.`, options: [3, 5, 7, 13].map(v => ({ h: 'e = ' + v, v })),
+    hint: c => `Does the number divide ${c.phi} evenly? If it does, it shares a factor and won't work.`,
+    validate: (v, c) => { const g = gcd(v, c.phi); if (g !== 1) return `${v} and ${c.phi} share the factor ${g}, so e = ${v} would have no matching d. Pick another.`; if (modinv(v, c.phi) === v) return `With these primes, e = ${v} would make d = ${v} as well: the private key would equal the public one! Pick another e.`; return null; },
+    onPick: (v, c) => { c.e = v; rs('e', v); }, after: c => `e = ${c.e} ✓ No shared factor with ${c.phi}. (Real systems use e = 65537.)` },
+  { type: 'calc', who: 'eve', title: 'Find the private exponent d', text: c => `Ehsan, you're the checker. We need the d where <b>${c.e} × d</b> leaves remainder <b>1</b> when divided by ${c.phi}.`,
+    formula: c => `${c.e} × d mod ${c.phi} = 1, so d`, answer: c => modinv(c.e, c.phi), range: c => c.phi, near: c => [c.phi - c.e, Math.floor(c.phi / c.e)],
+    working: c => invWorking(c.e, c.phi), onCorrect: (c, v) => { c.d = v; rs('d', v); S.rsa = { p: c.p, q: c.q, n: c.n, phi: c.phi, e: c.e, d: c.d }; save(); },
+    explain: c => `Check: ${c.e} × ${c.d} = ${c.e * c.d} = ${Math.floor(c.e * c.d / c.phi)} × ${c.phi} + 1 ✓` },
+  { type: 'info', title: 'Your keys are ready 🔑', text: 'The public key can go on a website for anyone. The private key stays with Bilal. p, q and φ should now be destroyed.', enter: () => { showKeys(); sfx.fanfare(); }, btn: 'Great!' }
+], { intro: 'Eight steps to a working RSA key pair.',
+  reset: () => { ['p', 'q', 'n', 'phi', 'e', 'd'].forEach(k => rs(k, '?')); if (!S.rsa) $('#f-keys').hidden = true; } });
+
+defineGuide('m2-msg', 'm2', () => [
+  { type: 'choose', who: 'alice', text: 'You want to send Bilal a secret number. Which key do you lock it with?', options: [
+      { h: 'Bilal\'s <b>public</b> key (e, n)', ok: true },
+      { h: 'My own private key', why: 'Then anyone with your public key could unlock it. That\'s signing, not secrecy.' },
+      { h: 'Bilal\'s private key', why: 'You don\'t have it. Nobody but Bilal does.' }],
+    explain: 'Lock with the <b>receiver\'s public key</b>; only the receiver\'s private key unlocks it.' },
+  { type: 'pick', who: 'alice', text: 'Pick your secret number m. Bilal and Ehsan, look away! 🙈', secret: true,
+    options: () => shuffle(Array.from({ length: Math.min(S.rsa.n - 3, 30) }, (_, i) => i + 2)).slice(0, 4).sort((a, b) => a - b).map(v => ({ h: String(v), v })),
+    onPick: (v, c) => { c.m = v; setv('e-m', '🔒'); }, after: 'Message chosen.' },
+  powCalc({ who: 'alice', title: 'Lock it', text: () => `Raise m to Bilal's public e = ${S.rsa.e}, remainder mod n = ${S.rsa.n}.`, label: 'c', pow: c => [c.m, S.rsa.e, S.rsa.n],
+    onCorrect: (c, v) => { c.c = v; setv('e-c', v); }, explain: c => `Locked: c = ${c.c}. It looks nothing like m.` }),
+  { type: 'action', text: 'Send c across the open wire.', btn: '📨 Send',
+    run: async c => { sfx.whoosh(); await fly($('#e-c'), $('#e-rc'), { color: 'var(--accent)', text: '🔒 ' + c.c }); setv('e-rc', c.c); setv('e-eve', `c = ${c.c}<br>public key (${S.rsa.e}, ${S.rsa.n})`); },
+    explain: 'Bilal received c. So did Ehsan.' },
+  { type: 'choose', who: 'eve', text: 'You have c and Bilal\'s public key. Can you read m?', options: [
+      { h: 'No. I\'d need d, which needs φ(n), which needs p and q: I\'d have to <b>factor n</b>', ok: true },
+      { h: 'Yes, just undo the power using e', why: 'You can\'t undo “raise to e, mod n” with e. That needs d.' },
+      { h: 'Yes, c is the message', why: 'c is the locked version of m.' }],
+    explain: () => `Right. Here n = ${S.rsa.n} is tiny, so factoring is easy (${S.rsa.p} × ${S.rsa.q}). For a 2048-bit n, nobody on Earth can.` },
+  powCalc({ who: 'bob', title: 'Unlock it', text: () => `Raise c to your <b>private</b> d = ${S.rsa.d}, remainder mod n = ${S.rsa.n}.`, label: 'm', pow: c => [c.c, S.rsa.d, S.rsa.n],
+    onCorrect: (c, v) => { setv('e-dm', v); setv('e-m', c.m); sfx.fanfare(); }, explain: c => `Bilal got <b>${c.m}</b>, exactly Ayesha's secret number. 🎉` })
+], { intro: 'Ayesha sends Bilal a secret using the keys from 2A.',
+  reset: () => { ['e-m', 'e-c', 'e-rc', 'e-dm'].forEach(id => setv(id, '?')); setv('e-eve', 'nothing yet'); if (S.rsa) showKeys(); } });
+
+const PITS = [
+  { t: 'A voting app encrypts each ballot, just "YES" or "NO", with textbook RSA (no padding).', a: 'broken', clue: 'There are only two possible ballots. Could Ehsan lock both ballots with the public key and compare?', why: 'Textbook RSA always gives the same c for the same m. Ehsan locks "YES" and "NO" with the public key and compares. Randomised padding (OAEP) fixes this.' },
+  { t: 'A server encrypts with RSA-OAEP, a 3072-bit modulus and e = 65537.', a: 'safe', clue: 'Run the checklist: padding? at least 2048 bits? standard e?', why: 'Randomised padding, a strong modulus and the standard exponent: current good practice.' },
+  { t: 'e = 3, and a short key m is encrypted with no padding, so m³ is smaller than n.', a: 'broken', clue: 'If m³ is smaller than n, does "mod n" ever change anything?', why: 'No remainder is ever taken, so Ehsan just takes the ordinary cube root of c. Padding makes m large and random.' },
+  { t: 'Two departments share the same modulus n but use different exponents.', a: 'broken', clue: 'Each department knows a d for that n. What could they work out about n?', why: 'Anyone holding one key pair can factor the shared n and read the other department\'s messages. Every key needs its own n.' },
+  { t: 'The key generator picks a random prime p, then sets q to the very next prime after p.', a: 'broken', clue: 'If p and q are almost equal, n is almost p × p. What is √n close to?', why: 'When p and q are very close, Fermat\'s method finds them almost instantly from n.' },
+  { t: 'A new system launched in 2026 uses 1024-bit RSA keys.', a: 'broken', clue: 'What minimum key size does NIST require today?', why: '1024-bit RSA is no longer considered safe. NIST requires at least 2048 bits, and 3072 for long-term secrets.' },
+  { t: 'Documents are signed with RSA-PSS over a SHA-256 hash.', a: 'safe', clue: 'Is there randomised padding? Is the document hashed first?', why: 'PSS is the modern padding for RSA signatures, and hashing first lets you sign any length of document.' }
+];
+const ROT = ['eve', 'alice', 'bob'];
+defineGuide('m2-pit', 'm2', () => [
+  { type: 'info', title: 'How to judge each card', text: 'For every situation, ask three questions:', html: '<div class="worked">1. Is there randomised padding (OAEP to encrypt, PSS to sign)?<br>2. Is the key at least 2048 bits?<br>3. Are the primes random, independent and unique to this key?</div><p class="mt-2 mb-0">A “no” to any of these usually means <b>broken</b>. The named person reads the card aloud; then decide together.</p>' },
+  ...PITS.map((p, i) => ({ type: 'choose', who: ROT[i % 3], noShuffle: true, title: `Card ${i + 1} of 7: read it aloud`, text: `<div class="pit-text">${p.t}</div>`,
+    options: [{ h: '✅ Safe', ok: p.a === 'safe', why: 'Look again at the checklist.' }, { h: '💥 Broken', ok: p.a === 'broken', why: 'Nothing here is missing: padding, key size and primes are all fine.' }],
+    hint: p.clue, explain: `<b>${p.a === 'safe' ? 'Safe.' : 'Broken.'}</b> ${p.why}` }))
+], { intro: 'Seven real-world situations. Take turns reading them aloud.', onDone: g => { if (g.mistakes === 0) giveBadge('eagle'); } });
+
+/* =========================================================
+   MISSION 3
+   ========================================================= */
+const SIG_MSGS = ['PAY ALI 50', 'MEET AT 9', 'GRADE A+'];
+const TAMPER = { 'PAY ALI 50': 'PAY ALI 500', 'MEET AT 9': 'MEET AT 6', 'GRADE A+': 'GRADE F' };
+function toyHash(m, n) { let s = 0; for (const ch of m) s += ch.charCodeAt(0); return { sum: s, h: s % n }; }
+function hashHTML(m, n) {
+  const { sum, h } = toyHash(m, n);
+  return `<div class="hashrow">${[...m].map((c, i) => `<span class="ch" style="animation-delay:${i * 60}ms"><small>${c === ' ' ? '␣' : esc(c)}</small>${c.charCodeAt(0)}</span>`).join('')}</div><div class="mono small">add the codes: ${sum} → remainder ÷ ${n} = <b class="hl">${h}</b></div>`;
+}
+defineGuide('m3-sign', 'm3', () => [
+  { type: 'info', title: 'What a signature does', text: () => `A signature proves <b>who</b> wrote a message and that it wasn't changed. Ayesha now owns the key pair from Mission 2: public (e, n) = (${S.rsa.e}, ${S.rsa.n}), private d = ${S.rsa.d}.` },
+  { type: 'pick', who: 'alice', title: 'Choose a message to sign', text: 'Which message will you send Bilal?', options: SIG_MSGS.map(m => ({ h: '📄 ' + m, v: m })),
+    onPick: (v, c) => { c.msg = v; c.h = toyHash(v, S.rsa.n).h; setv('sg-m', esc(v)); setv('sg-h', c.h); $('#sg-hash').innerHTML = `<div class="step-box"><b>How the fingerprint h was made</b> (a toy hash; real systems use SHA-256)${hashHTML(v, S.rsa.n)}</div>`; },
+    after: c => `The fingerprint of “${esc(c.msg)}” is <b>h = ${c.h}</b>. Change one letter and it changes.` },
+  { type: 'choose', who: 'alice', text: 'Which key do you sign with?', options: [
+      { h: 'My own <b>private</b> key d', ok: true },
+      { h: 'Bilal\'s public key', why: 'That\'s for sending Bilal secrets. It doesn\'t prove anything about you.' },
+      { h: 'My own public key e', why: 'Everyone has that, so anyone could make the same “signature”.' }],
+    explain: 'Only Ayesha has d, so only Ayesha can make this signature.' },
+  powCalc({ who: 'alice', title: 'Sign', text: () => `Raise the fingerprint h to your private d = ${S.rsa.d}, remainder mod ${S.rsa.n}.`, label: 's', pow: c => [c.h, S.rsa.d, S.rsa.n],
+    onCorrect: (c, v) => { c.s = v; setv('sg-s', v); }, explain: c => `Signature s = ${c.s}. It's sent along with the message.` }),
+  { type: 'choose', who: 'bob', text: 'You received the message and s. Which key do you check it with?', options: [
+      { h: 'Ayesha\'s <b>public</b> key e', ok: true },
+      { h: 'Ayesha\'s private key', why: 'You don\'t have it, and you don\'t need it.' },
+      { h: 'My own private key', why: 'Your keys have nothing to do with Ayesha\'s signature.' }],
+    explain: 'Anyone in the world can check a signature, because the public key is public.' },
+  powCalc({ who: 'bob', title: 'Check', text: () => `Raise s to Ayesha's public e = ${S.rsa.e}, remainder mod ${S.rsa.n}. If the result equals the fingerprint h, the signature is genuine.`, label: 'v', pow: c => [c.s, S.rsa.e, S.rsa.n],
+    onCorrect: (c, v) => { c.v = v; setv('sg-v', `${v} = h ✔`); $('#sg-seal').innerHTML = '<div class="seal ok" style="transform:rotate(-14deg)">VERIFIED<br>✔<br>by Ayesha</div>'; },
+    explain: c => `v = ${c.v}, the same as h = ${c.h}. ✔ Genuine, from Ayesha, unchanged.` }),
+  { type: 'action', who: 'eve', title: 'Ehsan strikes', text: 'Ehsan grabs a copy of the signed message and edits it before it reaches Bilal again. Ehsan can\'t make a new signature (no d), so the old one stays attached.', btn: '😈 Change the message',
+    run: async c => { c.t = TAMPER[c.msg]; c.h2 = toyHash(c.t, S.rsa.n).h; sfx.bad(); setv('sg-m', `<span class="c-eve">${esc(c.t)}</span>`); setv('sg-h', `${c.h2} <small class="muted">(new)</small>`); $('#sg-seal').innerHTML = ''; setv('sg-v', `${c.v} (from s)`); $('#sg-hash').innerHTML = `<div class="step-box"><b>Fingerprint of the edited message</b>${hashHTML(c.t, S.rsa.n)}</div>`; await sleep(600); },
+    explain: c => `The message now says “${esc(c.t)}”, with fingerprint h′ = ${c.h2}.` },
+  { type: 'choose', who: 'bob', text: c => `The signature still gives v = <b>${c.v}</b>, but the message you received has fingerprint h′ = <b>${c.h2}</b>. Do you accept it?`, noShuffle: true, options: [
+      { h: '✅ Accept', why: 'Compare the two numbers. Do they match?' },
+      { h: '⛔ Reject: v and h′ don\'t match', ok: true }],
+    onCorrect: async () => { $('#sg-seal').innerHTML = '<div class="seal bad" style="transform:rotate(-14deg)">FORGERY<br>✖<br>rejected</div>'; await sleep(300); },
+    explain: 'Caught! Changing even one character changes the fingerprint, and the old signature no longer fits.' }
+], { intro: 'Ayesha signs, Bilal checks, Ehsan tries to cheat.',
+  reset: () => { ['sg-m', 'sg-h', 'sg-s', 'sg-v'].forEach(id => setv(id, '—')); $('#sg-seal').innerHTML = ''; $('#sg-hash').innerHTML = ''; } });
+
+const COURT = [
+  { t: 'A judge must be convinced that Ayesha, and only Ayesha, approved a contract.', a: 'sig', why: 'Only Ayesha holds Ayesha\'s private key, so anyone can check who signed. With a MAC, Bilal has the same key and could have made the tag.' },
+  { t: 'Two internal servers already share a secret key and need a fast check on every message between them.', a: 'mac', why: 'Both ends share the key and trust each other. A MAC such as HMAC-SHA256 is far faster than a signature.' },
+  { t: 'Millions of phones must check that an app update really came from the developer, without sharing any secret.', a: 'sig', why: 'Everyone can hold the public key; only the developer can sign. With a MAC every phone would hold the secret, and any phone could fake updates.' },
+  { t: 'Ayesha and Bilal share a key and only want to detect whether a message was changed in transit. Nobody else will ever check.', a: 'mac', why: 'A MAC gives integrity between the two key holders. Non-repudiation isn\'t needed here.' },
+  { t: 'Ayesha sends Bilal an order, then later denies ever sending it. Bilal needs proof that will stand up.', a: 'sig', why: 'That\'s non-repudiation. With a shared MAC key, Ayesha could say “Bilal made it”.' },
+  { t: 'Every mail server along the way must be able to check an email really came from your bank\'s domain.', a: 'sig', why: 'This is how DKIM works: the domain signs, publishes its public key, and any server can check without being able to forge.' }
+];
+defineGuide('m3-court', 'm3', () => [
+  { type: 'info', title: 'The key difference', text: 'Both MACs and signatures detect tampering. The difference is <b>who can make them</b>:', html: '<div class="worked">MAC → one <b>shared</b> key. Both people can make the tag.<br>Signature → <b>private</b> key to make, public key to check. Only one person can make it.</div><p class="mt-2 mb-0">So ask: does an <b>outsider</b> need to check it, or must the sender be <b>unable to deny</b> it? Then you need a signature.</p>' },
+  ...COURT.map((c, i) => ({ type: 'choose', who: ROT[i % 3], noShuffle: true, title: `Case ${i + 1} of 6: read it aloud`, text: `<div class="pit-text">${c.t}</div>`,
+    options: [{ h: '🔑 A MAC is enough', ok: c.a === 'mac', why: 'Does someone other than the two key holders need to check it, or must the sender be unable to deny it?' }, { h: '✍️ Needs a signature', ok: c.a === 'sig', why: 'Only the two key holders are involved and both trust each other. A simpler tool is enough.' }],
+    explain: c.why }))
+], { intro: 'Six real situations. Take turns reading them aloud.' });
+
+/* ---------- Elliptic curve ---------- */
+const CV = { xmin: -2.2, xmax: 3.4, ymin: -4.5, ymax: 4.5, root: -1.32472 };
+let cvExtra = null, cvLocked = false;
+const fcurve = x => x * x * x - x + 1;
+function cvPoint(w) { const x = +$('#cv-' + w + 'x').value, s = +$('#cv-' + w + 's').value; return { x, y: s * Math.sqrt(Math.max(0, fcurve(x))) }; }
+function cvDot(g, p, color, label, hollow) {
+  const { ctx, X, Y } = g; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 7, 0, Math.PI * 2);
+  if (hollow) { ctx.lineWidth = 2.5; ctx.strokeStyle = color; ctx.stroke(); } else { ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = css('--surface'); ctx.stroke(); }
+  ctx.fillStyle = color; ctx.font = '700 14px "Bricolage Grotesque",sans-serif'; ctx.fillText(label, X(p.x) + 10, Y(p.y) - 10);
+}
+function curveDraw(extra) {
+  const c = $('#curve'); if (!c || !c.offsetParent) return;
+  extra = extra || cvExtra;
+  const w = c.clientWidth, h = Math.round(Math.min(w * .62, 460)), dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); c.style.height = h + 'px';
+  const ctx = c.getContext('2d'); if (!ctx) return; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const X = x => (x - CV.xmin) / (CV.xmax - CV.xmin) * w, Y = y => h - (y - CV.ymin) / (CV.ymax - CV.ymin) * h;
+  ctx.clearRect(0, 0, w, h); ctx.lineWidth = 1; ctx.strokeStyle = css('--grid');
+  for (let x = Math.ceil(CV.xmin); x <= CV.xmax; x++) { ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), h); ctx.stroke(); }
+  for (let y = Math.ceil(CV.ymin); y <= CV.ymax; y++) { ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(w, Y(y)); ctx.stroke(); }
+  ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), h); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.stroke();
+  ctx.strokeStyle = css('--accent2'); ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath();
+  let first = true;
+  for (let x = CV.xmax; x >= CV.root; x -= .004) { const y = Math.sqrt(Math.max(0, fcurve(x))); if (first) { ctx.moveTo(X(x), Y(y)); first = false; } else ctx.lineTo(X(x), Y(y)); }
+  ctx.lineTo(X(CV.root), Y(0));
+  for (let x = CV.root; x <= CV.xmax; x += .004) ctx.lineTo(X(x), Y(-Math.sqrt(Math.max(0, fcurve(x)))));
+  ctx.stroke();
+  const g = { ctx, X, Y, w, h };
+  if (extra) extra(g);
+  const P = cvPoint('p'), Q = cvPoint('q');
+  cvDot(g, P, css('--alice'), 'P'); cvDot(g, Q, css('--bob'), 'Q');
+  $('#cv-pxv').textContent = `${P.x.toFixed(2)}, y = ${P.y.toFixed(2)}`; $('#cv-qxv').textContent = `${Q.x.toFixed(2)}, y = ${Q.y.toFixed(2)}`;
+}
+function cvCompute(dbl) {
+  const P = cvPoint('p'), Q = dbl ? P : cvPoint('q');
+  const lam = dbl ? (3 * P.x * P.x - 1) / (2 * P.y) : (Q.y - P.y) / (Q.x - P.x);
+  const x3 = lam * lam - P.x - Q.x, y3 = lam * (P.x - x3) - P.y;
+  return { P, Q, lam, dbl, Rm: { x: x3, y: -y3 }, R: { x: x3, y: y3 } };
+}
+function anim(ms, fn) { return new Promise(res => { const t0 = performance.now(); const f = now => { const k = Math.min(1, (now - t0) / ms); fn(k); if (k < 1) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); }); }
+function drawLine(g, c, t) { const { ctx, X, Y } = g, xa = CV.xmin, xb = CV.xmin + (CV.xmax - CV.xmin) * t; ctx.save(); ctx.strokeStyle = css('--gold'); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X(xa), Y(c.P.y + c.lam * (xa - c.P.x))); ctx.lineTo(X(xb), Y(c.P.y + c.lam * (xb - c.P.x))); ctx.stroke(); ctx.restore(); }
+function drawRefl(g, c, t) { const { ctx, X, Y } = g; ctx.save(); ctx.setLineDash([6, 6]); ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(c.R.x), Y(c.Rm.y)); ctx.lineTo(X(c.R.x), Y(c.Rm.y + (c.R.y - c.Rm.y) * t)); ctx.stroke(); ctx.restore(); }
+async function cvPhase1(c) {
+  cvExtra = null; sfx.whoosh();
+  await anim(900, k => curveDraw(g => drawLine(g, c, k)));
+  cvExtra = g => { drawLine(g, c, 1); cvDot(g, c.Rm, css('--muted'), 'third hit', true); }; curveDraw();
+}
+async function cvPhase2(c) {
+  const lab = c.dbl ? '2P' : 'P + Q';
+  await anim(800, k => curveDraw(g => { drawLine(g, c, 1); cvDot(g, c.Rm, css('--muted'), 'third hit', true); drawRefl(g, c, k); }));
+  cvExtra = g => { drawLine(g, c, 1); cvDot(g, c.Rm, css('--muted'), 'third hit', true); drawRefl(g, c, 1); cvDot(g, c.R, css('--accent'), lab); }; curveDraw(); sfx.good();
+  const off = c.R.x < CV.xmin || c.R.x > CV.xmax || c.R.y < CV.ymin || c.R.y > CV.ymax;
+  $('#cv-info').innerHTML = `${c.dbl ? 'Tangent at P' : 'Line through P and Q'} → third hit (${c.R.x.toFixed(2)}, ${c.Rm.y.toFixed(2)}) → flip → <b>${lab} = (${c.R.x.toFixed(2)}, ${c.R.y.toFixed(2)})</b>${off ? ' (off the edge of the plot)' : ''}`;
+}
+function cvSliders(on) { cvLocked = !on; ['#cv-px', '#cv-ps', '#cv-qx', '#cv-qs'].forEach(s => $(s).disabled = !on); }
+function showSizes() {
+  const box = $('#cv-sizes'); box.hidden = false;
+  box.innerHTML = `<h6>About the same security, very different key sizes</h6>
+    <div class="sz"><span>RSA</span><div class="bar-k" style="background:linear-gradient(90deg,#a3205f,#5b2bb5)" data-w="100">3072 bits</div></div>
+    <div class="sz"><span>ECC</span><div class="bar-k" style="background:linear-gradient(90deg,#0b8f9c,#2346c8);min-width:96px" data-w="8.3">256 bits</div></div>
+    <p class="small muted mt-2 mb-0">Smaller keys mean faster connections, less data and longer battery life. That's why HTTPS, WhatsApp-style messaging and phone security chips use curves.</p>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => $$('#cv-sizes .bar-k').forEach(b => b.style.width = b.dataset.w + '%')));
+}
+function curveInit() {
+  ['#cv-px', '#cv-ps', '#cv-qx', '#cv-qs'].forEach(s => $(s).addEventListener('input', () => { cvExtra = null; curveDraw(); }));
+  window.addEventListener('resize', () => { if (S.screen === 'm3') curveDraw(); });
+  cvSliders(false);
+  if (S.done['m3-curve']) showSizes();
+}
+defineGuide('m3-curve', 'm3', () => [
+  { type: 'info', title: 'Points instead of numbers', text: 'In elliptic-curve cryptography the “numbers” are <b>points on a curve</b>, and there is a special way to add two points. It\'s easiest to understand as a drawing.', enter: () => { cvSliders(false); cvExtra = null; curveDraw(); } },
+  { type: 'custom', who: 'alice', text: 'Drag the <b class="c-alice">pink P slider</b> (and choose upper or lower half) to place point P anywhere you like. Then press Done.',
+    render: (area, c, done) => { cvSliders(true); $('#cv-qx').disabled = $('#cv-qs').disabled = true; const b = el('button', 'btn-q', 'Done, P is placed'); b.onclick = () => { b.remove(); done('P is placed.'); }; area.appendChild(b); } },
+  { type: 'custom', who: 'bob', text: 'Drag the <b class="c-bob">blue Q slider</b> to place Q somewhere <b>different</b> from P. Then press Done.',
+    render: (area, c, done, g, bad) => {
+      cvSliders(true); $('#cv-px').disabled = $('#cv-ps').disabled = true;
+      const b = el('button', 'btn-q', 'Done, Q is placed');
+      b.onclick = () => { const P = cvPoint('p'), Q = cvPoint('q'); if (Math.abs(P.x - Q.x) < .08) { bad('P and Q are too close (or straight above each other). Slide Q further left or right.'); sfx.bad(); return; } cvSliders(false); b.remove(); done('Q is placed. The sliders are now locked.'); };
+      area.appendChild(b);
+    } },
+  { type: 'action', text: 'Move 1: draw the straight line through P and Q.', btn: '📏 Draw the line', run: async c => { c.k = cvCompute(false); await cvPhase1(c.k); },
+    explain: 'The line meets the curve at exactly <b>one more point</b>: the hollow circle.' },
+  { type: 'choose', text: 'Is that hollow point the answer, P + Q?', options: [
+      { h: 'No: we flip it over the x-axis (mirror top ↔ bottom)', ok: true },
+      { h: 'Yes, that\'s P + Q', why: 'Close! There\'s one more move.' },
+      { h: 'No: P + Q is the midpoint between P and Q', why: 'Curve addition isn\'t like normal averaging. Think about a mirror.' }],
+    explain: 'Right. Move 2 is to reflect the third point across the x-axis.' },
+  { type: 'action', text: 'Move 2: flip the third point over the x-axis.', btn: '🪞 Flip it', run: async c => { await cvPhase2(c.k); }, explain: 'That reflected point is <b>P + Q</b>. Two moves: line, then flip.' },
+  { type: 'choose', text: 'Now double P (P + P). There\'s only one point, so which line do we draw?', options: [
+      { h: 'The tangent: the line that just touches the curve at P', ok: true },
+      { h: 'A vertical line through P', why: 'A vertical line never meets the curve again; that gives the special “point at infinity”.' },
+      { h: 'Any line through P', why: 'It must be one exact line, or everyone would get different answers.' }],
+    explain: 'Yes: the tangent at P. After that, the same flip.' },
+  { type: 'action', text: 'Watch the tangent and the flip together.', btn: '✖2 Double P', run: async c => { c.k2 = cvCompute(true); await cvPhase1(c.k2); await sleep(400); await cvPhase2(c.k2); }, explain: 'That\'s 2P. Repeat these moves and you get 3P, 4P, … kP.' },
+  { type: 'choose', text: 'Computing kP (adding P to itself k times) is fast. ECC security depends on which <b>hard</b> problem?', options: [
+      { h: 'Given P and kP, finding k (the elliptic-curve discrete log problem, ECDLP)', ok: true },
+      { h: 'Factoring a big n = p × q', why: 'That\'s RSA\'s hard problem.' },
+      { h: 'Reflecting a point across the x-axis', why: 'That\'s easy, you just did it!' }],
+    hint: 'In Mission 1, the hard problem was finding a from 5<sup>a</sup> mod 23. What\'s the curve version?',
+    explain: 'Yes. Real ECC uses a curve over a finite field (points look like scattered dots), but the add and double rules are the same.', onCorrect: () => showSizes() }
+], { intro: 'Add points by drawing. No arithmetic needed.', onDone: () => giveBadge('curve'),
+  reset: () => { cvExtra = null; $('#cv-info').textContent = 'The coach will tell you when to move the points.'; curveDraw(); } });
+
+const EL_Q = [
+  { q: 'ElGamal, DSA and ECDSA need a fresh random k for every signature. What happens if the same k signs two different messages?', opts: [['Anyone can recover the private key. This is how Sony\'s PS3 signing key leaked in 2010', true], ['Nothing, k is public anyway', false, 'k must stay secret and fresh. Reusing it leaks information.'], ['The two signatures just look identical', false, 'They don\'t look identical, but something far worse happens.']], hint: 'Each signature is an equation with two unknowns: k and the private key. What do two equations with the same unknowns let you do?', why: 'Two signatures with the same k give two equations in two unknowns. Solve them and the private key falls out.' },
+  { q: 'What is the Digital Signature Standard (DSS, FIPS 186)?', opts: [['NIST\'s standard for signature algorithms: today RSA, ECDSA and EdDSA', true], ['A symmetric cipher like AES', false, 'Look at the S in DSS.'], ['A key-exchange protocol replacing Diffie–Hellman', false, 'DSS is about signing, not agreeing keys.']], hint: 'The S in DSS stands for Signature.', why: 'FIPS 186-5 (2023) approves RSA, ECDSA and EdDSA; the original DSA is kept only for checking older signatures.' },
+  { q: 'Why do HTTPS, phones and messaging apps prefer elliptic curves today?', opts: [['Similar security with much smaller keys (256-bit ECC ≈ 3072-bit RSA)', true], ['Curves can never be broken by any computer', false, 'A large quantum computer would break both RSA and ECC.'], ['ECC doesn\'t need a private key', false, 'Every public-key system has a private key.']], hint: 'Look at the key-size bars that appeared after task 3C.', why: 'Smaller keys mean speed and efficiency. (Neither RSA nor ECC survives a large quantum computer, which is why post-quantum standards such as ML-KEM and ML-DSA now exist.)' }
+];
+defineGuide('m3-quiz', 'm3', () => EL_Q.map((q, i) => ({ type: 'choose', who: ROT[i % 3], title: `Question ${i + 1} of 3`, text: q.q, hint: q.hint,
+  options: q.opts.map(([h, ok, why]) => ({ h, ok, why })), explain: q.why })), { intro: 'Three questions to finish Mission 3.' });
+
+/* =========================================================
+   BOSS
+   ========================================================= */
+const BOSS_Q = [
+  { q: 'In Diffie–Hellman, which values travel across the open network?', opts: ['p, g, A and B', 'The secrets a and b', 'The shared secret s', 'Nothing at all'] },
+  { q: 'Plain, unauthenticated Diffie–Hellman is vulnerable to…', opts: ['A man-in-the-middle attack', 'Brute-forcing a 2048-bit exponent', 'Hash collisions', 'Nothing, it is perfectly secure'] },
+  { q: 'RSA\'s security rests on the difficulty of…', opts: ['Factoring n = p × q', 'Computing a gcd', 'Adding points on a curve', 'Reversing a hash'] },
+  { q: 'In RSA, the private exponent d is chosen so that…', opts: ['e × d leaves remainder 1 when divided by φ(n)', 'd = n − e', 'd = e²', 'e + d = φ(n)'] },
+  { q: 'To send the receiver a secret message, the sender locks it with…', opts: ['The receiver\'s public key', 'The sender\'s private key', 'The receiver\'s private key', 'The sender\'s public key'] },
+  { q: 'To sign a document, the sender uses…', opts: ['Their own private key', 'The receiver\'s public key', 'Their own public key', 'A shared MAC key'] },
+  { q: 'What does a digital signature give that a MAC cannot?', opts: ['Non-repudiation', 'Integrity', 'Confidentiality', 'Speed'] },
+  { q: 'Roughly what ECC key size matches the security of 3072-bit RSA?', opts: ['256 bits', '3072 bits', '1024 bits', '64 bits'] }
+];
+let B = null;
+function renderBoss() {
+  if (S.boss) return bossResult();
+  $('#boss-box').innerHTML = `<div class="text-center py-3"><div class="enemy" style="font-size:5.5rem">🤖</div>
+    <h3 class="mt-2">Eve-9000 has taken over the network</h3>
+    <p class="muted mx-auto" style="max-width:52ch">Eight questions, 20 seconds each. Faster correct answers earn more XP, up to 50 each. Six correct answers defeat Eve-9000. No coach and no hints here: this is where you show what you learned. Agree as a team before anyone taps.</p>
+    <button class="btn-q lg" id="bossStart"><i class="bi bi-lightning-charge-fill"></i> Start the battle</button></div>`;
+  $('#bossStart').onclick = () => { B = { i: 0, score: 0, correct: 0, enemy: 100, shield: 100, t: 20, timer: null, locked: false }; sfx.click(); bossNext(); };
+}
+function bossNext() {
+  if (!B) return;
+  if (B.i >= BOSS_Q.length) return bossEnd();
+  const q = BOSS_Q[B.i]; B.locked = false; B.t = 20;
+  $('#boss-box').innerHTML = `<div class="arena">
+      <div class="fighter"><div class="enemy" id="enemy">🤖</div><div class="small fw-bold">Eve-9000</div><div class="hp"><div id="hp-e" style="width:${B.enemy}%;background:var(--bad)"></div></div></div>
+      <div class="vs">VS</div>
+      <div class="fighter"><div class="enemy" style="animation-delay:-1.2s">${S.team.emblem}</div><div class="small fw-bold">${esc(S.team.name)}</div><div class="hp"><div id="hp-y" style="width:${B.shield}%;background:var(--good)"></div></div></div>
+    </div>
+    <div class="d-flex justify-content-between small mt-3"><span>Question ${B.i + 1} of ${BOSS_Q.length}</span><span>Battle XP: <b>${B.score}</b></span></div>
+    <div class="timer"><div id="tmr"></div></div>
+    <p class="fs-5 fw-bold mt-3">${q.q}</p><div class="qz-opts" id="boss-opts"></div>`;
+  shuffle(q.opts.map((_, i) => i)).forEach(i => { const b = el('button', 'opt', q.opts[i]); b.dataset.ok = i === 0 ? '1' : '0'; b.onclick = () => bossAnswer(b); $('#boss-opts').appendChild(b); });
+  clearInterval(B.timer);
+  B.timer = setInterval(() => { if (!B) return; B.t -= .1; const tm = $('#tmr'); if (tm) tm.style.width = Math.max(0, B.t / 20 * 100) + '%'; if (B.t <= 0) bossAnswer(null); }, 100);
+}
+function bossAnswer(btn) {
+  if (!B || B.locked) return; B.locked = true; clearInterval(B.timer);
+  const ok = btn && btn.dataset.ok === '1';
+  $$('#boss-opts .opt').forEach(o => { o.disabled = true; if (o.dataset.ok === '1') o.classList.add('right'); });
+  if (ok) {
+    const pts = 20 + Math.round(30 * Math.max(0, B.t) / 20); B.score += pts; B.correct++;
+    B.enemy = Math.max(0, Math.round(100 - B.correct * (100 / 6))); $('#hp-e').style.width = B.enemy + '%';
+    const en = $('#enemy'); en.classList.remove('hit'); void en.offsetWidth; en.classList.add('hit');
+    floatXP(pts, btn); sfx.good();
+  } else {
+    if (btn) btn.classList.add('wrong'); else toast('⏱️ Time\'s up', 'bad');
+    B.shield = Math.max(0, B.shield - 15); $('#hp-y').style.width = B.shield + '%'; shake($('#boss-box')); sfx.bad();
+  }
+  B.i++; setTimeout(bossNext, 1500);
+}
+function bossEnd() {
+  S.boss = { score: B.score, correct: B.correct }; B = null;
+  addXP(S.boss.score, $('#boss-box'));
+  if (S.boss.correct >= 6) giveBadge('boss');
+  S.unlocked = 6; save(); renderStepper(); bossResult(); sfx.fanfare(); celebrate(true);
+}
+function bossResult() {
+  const b = S.boss, win = b.correct >= 6;
+  $('#boss-box').innerHTML = `<div class="text-center py-3"><div class="boom" style="font-size:5.5rem;display:inline-block">${win ? '💥' : '🛡️'}</div>
+    <h3 class="mt-2">${win ? 'Eve-9000 defeated' : 'You held off Eve-9000'}</h3>
+    <p class="muted">${b.correct} of 8 correct, earning <b>+${b.score} XP</b>.</p>
+    <button class="btn-q lg" data-go="cert">🏅 Claim your certificate</button></div>`;
+}
+
+/* =========================================================
+   CERTIFICATE
+   ========================================================= */
+const RANKS = { 1: 'Rising Cryptographers', 2: 'Expert Codebreakers', 3: 'Master Cryptographers' };
+function starsFor() { const p = S.xp / MAX_XP; return p >= .85 ? 3 : p >= .6 ? 2 : 1; }
+function renderCert() {
+  const st = starsFor();
+  $('#c-team').textContent = `${S.team.emblem} ${S.team.name}`;
+  $('#c-members').textContent = S.team.members.join(', ');
+  $('#c-stars').innerHTML = [1, 2, 3].map(i => `<span class="${i <= st ? 'on' : ''}" style="animation-delay:${.5 + i * .25}s">★</span>`).join('');
+  $('#c-rank').textContent = RANKS[st];
+  $('#c-max').textContent = MAX_XP; countUp($('#c-xp'), S.xp, 1800);
+  $('#c-badges').innerHTML = S.badges.map((k, i) => `<div class="cb" style="animation-delay:${1.2 + i * .2}s"><div class="fs-2">${BADGES[k].icon}</div><small class="fw-bold">${BADGES[k].name}</small></div>`).join('');
+  $('#c-date').textContent = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#c-course').textContent = CONFIG.course;
+  $('#c-inst').innerHTML = CONFIG.instructor ? esc(CONFIG.instructor) : '&nbsp;';
+  let k = 0, got = 0, tot = 0;
+  $('#lo-all').innerHTML = Object.entries(OUTCOMES).map(([m, list], mi) => `<div class="col-md-4"><div class="lo-col"><h6>${BADGES[m].icon} Mission ${mi + 1}: ${MISSION_TITLES[m]}</h6>${list.map(o => { tot++; if (S.done[o.task]) got++; return loItem(o, 1 + (k++) * .12); }).join('')}</div></div>`).join('');
+  $('#lo-count').textContent = `${got} of ${tot} achieved`;
+  setTimeout(() => { celebrate(true); sfx.fanfare(); }, 400);
+}
+function rr(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
+async function downloadCert() {
+  try { await document.fonts.ready; } catch (e) {}
+  const c = document.createElement('canvas'); c.width = 1600; c.height = 1131; const x = c.getContext('2d');
+  const F = '"Bricolage Grotesque", sans-serif';
+  const g = x.createLinearGradient(0, 0, 1600, 1131); g.addColorStop(0, '#3047d9'); g.addColorStop(1, '#0f9d8c'); x.fillStyle = g; x.fillRect(0, 0, 1600, 1131);
+  x.fillStyle = '#ffffff'; rr(x, 40, 40, 1520, 1051, 36); x.fill();
+  x.strokeStyle = '#e3e7f2'; x.lineWidth = 1;
+  for (let i = 80; i < 1520; i += 32) { x.beginPath(); x.moveTo(i, 70); x.lineTo(i, 1061); x.stroke(); }
+  for (let j = 70; j < 1061; j += 32) { x.beginPath(); x.moveTo(70, j); x.lineTo(1530, j); x.stroke(); }
+  x.strokeStyle = '#3047d9'; x.lineWidth = 3; rr(x, 70, 70, 1460, 991, 26); x.stroke();
+  x.textAlign = 'center';
+  x.font = `90px ${F}`; x.fillText('🏆', 800, 175);
+  x.fillStyle = '#3047d9'; x.font = `800 30px ${F}`; x.fillText('Certificate of achievement', 800, 230);
+  x.fillStyle = '#1b2250'; x.font = `800 58px ${F}`; x.fillText('Asymmetric Cryptography Quest', 800, 300);
+  x.fillStyle = '#5a6390'; x.font = `400 28px ${F}`; x.fillText('This certifies that team', 800, 365);
+  x.fillStyle = '#1b2250'; x.font = `800 76px ${F}`; x.fillText(`${S.team.emblem} ${S.team.name}`, 800, 455);
+  x.fillStyle = '#5a6390'; x.font = `700 32px ${F}`; x.fillText(S.team.members.join('   ·   '), 800, 515);
+  const st = starsFor(); x.font = `64px ${F}`;
+  for (let i = 0; i < 3; i++) { x.fillStyle = i < st ? '#c98a00' : '#d6dbec'; x.fillText('★', 730 + i * 70, 600); }
+  x.fillStyle = '#1b2250'; x.font = `800 34px ${F}`; x.fillText(RANKS[st], 800, 652);
+  x.fillStyle = '#5a6390'; x.font = `400 25px ${F}`;
+  x.fillText('completed every mission: Diffie–Hellman key exchange, RSA key forging and digital signatures', 800, 700);
+  const loTot = Object.values(OUTCOMES).flat(), loGot = loTot.filter(o => S.done[o.task]).length;
+  x.fillStyle = '#3047d9'; x.font = `800 40px ${F}`; x.fillText(`${S.xp} of ${MAX_XP} XP  ·  ${loGot} of ${loTot.length} learning outcomes achieved`, 800, 765);
+  const bs = S.badges, gap = 190, start = 800 - (bs.length - 1) * gap / 2;
+  bs.forEach((k, i) => { x.font = `54px ${F}`; x.fillStyle = '#1b2250'; x.fillText(BADGES[k].icon, start + i * gap, 850); x.font = `700 19px ${F}`; x.fillStyle = '#5a6390'; x.fillText(BADGES[k].name, start + i * gap, 882); });
+  const foot = [[new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }), 'Date', 380], [CONFIG.course, 'Course', 800], [CONFIG.instructor || '', 'Instructor', 1220]];
+  foot.forEach(([v, l, cx]) => { x.fillStyle = '#1b2250'; x.font = `700 26px ${F}`; x.fillText(v, cx, 975); x.strokeStyle = '#5a6390'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(cx - 160, 990); x.lineTo(cx + 160, 990); x.stroke(); x.fillStyle = '#5a6390'; x.font = `400 20px ${F}`; x.fillText(l, cx, 1018); });
+  const a = document.createElement('a'); a.download = `CryptoQuest-${(S.team.name || 'team').replace(/[^a-z0-9]+/gi, '-')}.png`; a.href = c.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
+  toast('Certificate downloaded 🏅', 'gold');
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+function updateSoundBtn() { $('#soundBtn').innerHTML = `<i class="bi ${S.sound ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'}"></i>`; }
+function doReset() { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); }
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-start],[data-replay],[data-jump],[data-assign]'); if (!t) return;
+  if (t.dataset.go) go(t.dataset.go);
+  else if (t.dataset.start) startGuide(t.dataset.start);
+  else if (t.dataset.replay) startGuide(t.dataset.replay);
+  else if (t.dataset.jump) { const box = $('#t-' + t.dataset.jump); if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  else if (t.dataset.assign) { const [m, role, i] = t.dataset.assign.split('|'); setRole(m, role, +i); }
+});
+function init() {
+  load();
+  teamInit(); eveTilesInit(); curveInit();
+  ['m1', 'm2', 'm3'].forEach(m => personalize($('#s-' + m), m));
+  ['m1', 'm2', 'm3'].forEach(renderAssign); refreshWho();
+  [0, 1, 2].forEach(i => $('#mem' + i).addEventListener('input', () => { S.team.members[i] = $('#mem' + i).value.trim(); renderAssign('m1'); refreshWho(); }));
+  if (S.rsa) showKeys();
+  Object.keys(S.done).forEach(k => { const t = document.getElementById('t-' + k); if (t) t.classList.add('done'); });
+  refreshPanels(); updateMissionProgress(); shownXP = S.xp; renderXP(); updateSoundBtn();
+  $('#soundBtn').onclick = () => { S.sound = !S.sound; save(); updateSoundBtn(); if (S.sound) sfx.click(); };
+  $('#resetBtn').onclick = () => {
+    showOverlay(`<div class="ov-badge">♻️</div><h3 class="mt-2">Start over?</h3><p class="muted">This clears the team, XP and badges saved in this browser.</p><div class="d-flex gap-2 justify-content-center"><button class="btn-g" id="rsNo">Keep playing</button><button class="btn-q" id="rsYes">Clear and restart</button></div>`);
+    $('#rsNo').onclick = hideOverlay; $('#rsYes').onclick = doReset;
+  };
+  $('#c-dl').onclick = downloadCert; $('#c-print').onclick = () => window.print(); $('#c-party').onclick = () => { celebrate(true); sfx.fanfare(); };
+  $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay') hideOverlay(); });
+  go(ORDER.indexOf(S.screen) <= S.unlocked ? S.screen : 'home');
+}
+init();
+</script>
+</body>
+</html>
